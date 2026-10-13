@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מערכת גבייה - הדגמה מלאה</title>
+<style>
+:root{--bg:#eef2f4;--card:#fff;--ink:#14262e;--mute:#5d7079;--line:#d3dde2;--main:#0f5c6e;--dark:#0b3a46;--ok:#1d7a46;--bad:#b3322b;--warn:#a86b00}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Arial,sans-serif;line-height:1.5}
+.demo{background:#f0a500;text-align:center;padding:5px;font-weight:600;font-size:.85rem}
+.hdr{background:#fff;border-bottom:1px solid var(--line);padding:8px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.hdr .hl{display:grid;line-height:1.3;margin-inline-end:auto}
+.gs{display:flex;gap:6px}.gs input{width:260px;max-width:100%}
+.bn{background:var(--bad);color:#fff;border-radius:10px;padding:0 7px;font-size:.8rem;margin-inline-start:4px}
+.app{display:grid;grid-template-columns:215px 1fr;min-height:calc(100vh - 90px)}
+nav{background:var(--dark);padding:12px 0}
+nav button{display:block;width:100%;text-align:right;background:none;border:0;color:#c9dde3;padding:9px 16px;font:inherit;cursor:pointer;border-right:4px solid transparent}
+nav button.on,nav button:hover{background:#0f4a59;color:#fff}
+nav button.on{border-right-color:#f0a500}
+main{padding:20px;overflow-x:auto;min-width:0}
+.panel{display:none}.panel.on{display:block}
+h2{margin:0 0 14px}h4{margin:14px 0 6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-right:4px solid var(--main);padding:10px 14px;border-radius:6px}
+.kpi b{display:block;font-size:1.3rem}.kpi span{color:var(--mute);font-size:.88rem}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#f1f5f7}
+tr.k{cursor:pointer}tr.k:hover{background:#f6f9fa}
+.tw{overflow-x:auto}
+button.b,select,input,textarea{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+button.b{background:var(--main);color:#fff;border-color:var(--main);cursor:pointer}
+button.b.s{background:#fff;color:var(--main)}
+button.b:disabled{opacity:.5;cursor:not-allowed}
+button.sm{padding:2px 9px;font-size:.85rem}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.pill{padding:2px 9px;border-radius:10px;font-size:.82rem;color:#fff;white-space:nowrap}
+.g{background:var(--ok)}.r{background:var(--bad)}.o{background:var(--warn)}.gr{background:#6b7d86}.bl{background:#2f5aa8}
+.bad{color:var(--bad)}.ok{color:var(--ok)}.mu{color:var(--mute);font-size:.88rem}
+.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;border-bottom:2px solid var(--line)}
+.tabs button{background:none;border:0;padding:8px 16px;font:inherit;cursor:pointer;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabs button.on{color:var(--main);border-bottom-color:var(--main);font-weight:600}
+.tp{display:none}.tp.on{display:block}
+.bars{display:flex;align-items:flex-end;gap:8px;height:160px;border-bottom:1px solid var(--line);margin-top:8px}
+.col{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;text-align:center;font-size:.75rem}
+.col div{background:var(--main);border-radius:4px 4px 0 0}
+.col .v{color:var(--mute);font-size:.7rem}
+.cc{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.cc label{display:grid;gap:4px;font-size:.88rem;color:var(--mute)}
+.chk{display:flex;gap:8px;align-items:center;padding:3px 0;flex-wrap:wrap}
+.al{padding:6px 10px;border-right:4px solid var(--warn);background:#fbf6ea;margin-bottom:6px;border-radius:4px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.al.bad{border-right-color:var(--bad);background:#fbeceb;color:var(--ink)}.al.info{border-right-color:#2f5aa8;background:#edf2fb}
+.rule{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px}
+.phone{max-width:430px;margin:0 auto;border:8px solid #14262e;border-radius:28px;background:#fff;overflow:hidden}
+.ph-h{background:var(--main);color:#fff;padding:14px 16px;text-align:center}
+.ph-b{padding:14px 16px}
+.bigbal{text-align:center;border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
+.bigbal b{display:block;font-size:2rem}
+.pk{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)}
+.pbtn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+#modal{position:fixed;inset:0;background:rgba(10,30,38,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+.box{background:#fff;border-radius:10px;padding:20px;max-width:640px;width:100%;max-height:90vh;overflow:auto}
+.box h3{margin:0 0 12px}
+.spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--main);border-radius:50%;animation:sp 1s linear infinite;margin:14px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:4s}}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#14262e;color:#fff;padding:10px 18px;border-radius:6px;display:none;z-index:10;max-width:90vw}
+:focus-visible{outline:3px solid #f0a500;outline-offset:1px}
+@media(max-width:760px){.app{grid-template-columns:1fr}nav{display:flex;overflow-x:auto;padding:0}nav button{white-space:nowrap;border-right:0;width:auto}.gs input{width:160px}}
+@media print{body>.demo,body>.hdr,body>.app,#toast{display:none!important}#modal{position:static;background:none;display:block!important;padding:0}.box{max-height:none;overflow:visible;padding:0}#mf{display:none}.tw{max-height:none!important;overflow:visible!important}}
+</style>
+</head>
+<body>
+<div class="demo">גרסת הדגמה: ההתנהגות מדומה, שום נתון לא נשלח החוצה ולא נשמר אחרי רענון</div>
+<header class="hdr">
+  <div class="hl"><strong id="schoolN"></strong><span class="mu" id="dt"></span></div>
+  <form class="gs" id="gsf"><input id="gs" type="search" placeholder="חיפוש תלמיד, הורה, טלפון או קבלה" aria-label="חיפוש כללי"><button class="b s" type="submit">חיפוש</button></form>
+  <button class="b s" type="button" onclick="showAlerts()" aria-label="התראות">התראות<span class="bn" id="bn">0</span></button>
+  <label>מחובר כ <select id="who" onchange="switchU()"></select></label>
+</header>
+<div class="app">
+<nav aria-label="תפריט ראשי">
+  <button class="on" data-p="dash">לוח בקרה</button>
+  <button data-p="fam" data-perm="stu_view">תלמידים ומשפחות</button>
+  <button data-p="chg" data-perm="charges">חיובים והנחות</button>
+  <button data-p="plan" data-perm="plans">תוכניות חיוב</button>
+  <button data-p="card" data-perm="cards">כרטיסים שמורים</button>
+  <button data-p="chk" data-perm="checks">שיקים וקופה</button>
+  <button data-p="bank" data-perm="bank">בנק והוראות קבע</button>
+  <button data-p="rec" data-perm="rec">קבלות וזיכויים</button>
+  <button data-p="msg" data-perm="msg">גבייה והודעות</button>
+  <button data-p="req" data-perm="req">בקשות הורים</button>
+  <button data-p="portal" data-perm="req">פורטל הורים (תצוגה)</button>
+  <button data-p="rep" data-perm="rep">דוחות</button>
+  <button data-p="set" data-perm="users">משתמשים והרשאות</button>
+  <button data-p="cfg" data-perm="settings">הגדרות וחיבורים</button>
+</nav>
+<main>
+
+<div class="panel on" id="dash"><h2>לוח בקרה</h2>
+  <div class="row">
+    <button class="b" data-perm="pay" onclick="payFlow()">קבלת תשלום</button>
+    <button class="b s" data-perm="charges" onclick="bulkCharge()">חיוב קבוצתי</button>
+    <button class="b s" data-perm="plans" onclick="newPlan()">תוכנית חיוב</button>
+    <button class="b s" data-perm="stu_edit" onclick="addStu()">תלמיד חדש</button>
+    <button class="b s" data-perm="checks" onclick="closeCash()">סגירת קופה</button>
+  </div>
+  <div class="grid" id="kpi"></div>
+  <div class="two">
+    <div class="card"><b>גיל חובות</b><div class="bars" id="bAge" role="img" aria-label="גיל חובות"></div></div>
+    <div class="card"><b>גבייה בפועל בחצי השנה האחרונה</b><div class="bars" id="bMon" role="img" aria-label="גבייה חודשית"></div></div>
+  </div>
+  <div class="two">
+    <div class="card"><b>תחזית גבייה לחצי שנה קדימה</b><div class="bars" id="bFc" role="img" aria-label="תחזית גבייה"></div><p class="mu">לפי תוכניות חיוב ושיקים דחויים</p></div>
+    <div class="card"><b>התראות</b><div id="dAl"></div></div>
+  </div>
+  <div class="two">
+    <div class="card tw"><b>החייבים הגדולים</b><table style="min-width:0"><thead><tr><th>משפחה</th><th>יתרה</th><th>גיל חוב</th></tr></thead><tbody id="topB"></tbody></table></div>
+    <div class="card"><b>פעילות אחרונה</b><div id="act"></div></div>
+  </div>
+</div>
+
+<div class="panel" id="fam"><h2>תלמידים ומשפחות</h2>
+  <div class="row"><button class="b" data-perm="stu_edit" onclick="addStu()">תלמיד חדש</button><button class="b s" data-perm="stu_edit" onclick="$('#xl').click()">ייבוא מאקסל</button><input id="xl" type="file" accept=".xlsx,.xls,.csv" hidden></div>
+  <div class="tabs" data-g="fam"><button class="on" data-t="stu">תלמידים</button><button data-t="fams">משפחות</button></div>
+  <div class="tp on" data-g="fam" data-t="stu">
+    <div class="row"><input id="q" placeholder="חיפוש תלמיד, הורה או טלפון" oninput="R()" aria-label="חיפוש"><select id="cls" onchange="R()" aria-label="כיתה"><option value="">כל הכיתות</option><option>א'</option><option>ב'</option><option>ג'</option><option>ד'</option><option>ה'</option><option>ו'</option></select><select id="sst" onchange="R()" aria-label="סינון"><option value="act">פעילים</option><option value="debt">חייבים בלבד</option><option value="all">כולם</option><option value="out">עזבו / סיימו</option></select></div>
+    <div class="card tw"><table><thead><tr><th>תלמיד</th><th>כיתה</th><th>הורה</th><th>חויב נטו</th><th>שולם</th><th>יתרה</th><th>סטטוס</th></tr></thead><tbody id="stuB"></tbody></table></div>
+    <p class="mu">לחיצה על תלמיד פותחת כרטיס תלמיד: ספר חשבון, כרטיסי אשראי שמורים, תוכניות חיוב והערות.</p>
+  </div>
+  <div class="tp" data-g="fam" data-t="fams">
+    <div class="card tw"><table><thead><tr><th>משפחה</th><th>הורה</th><th>טלפון</th><th>ילדים</th><th>יתרה</th><th>גיל חוב</th><th>הבטחת תשלום</th><th>קשר אחרון</th></tr></thead><tbody id="famB"></tbody></table></div>
+  </div>
+</div>
+
+<div class="panel" id="chg"><h2>חיובים והנחות</h2>
+  <div class="row"><button class="b" onclick="bulkCharge()">חיוב קבוצתי</button><button class="b s" onclick="chargeFlow()">חיוב לתלמיד</button><button class="b s" onclick="discFlow()">הנחה / מלגה</button></div>
+  <div class="card"><div class="row"><b>חיובים אחרונים</b><select id="cty" onchange="R()" aria-label="סוג חיוב"><option value="">כל הסוגים</option></select></div>
+    <div class="tw"><table><thead><tr><th>תאריך</th><th>תלמיד</th><th>תיאור</th><th>סוג</th><th>סכום</th><th></th></tr></thead><tbody id="chgB"></tbody></table></div></div>
+  <div class="card"><div class="row"><b>קטלוג חיובים</b><button class="b s sm" onclick="addCat()">פריט חדש</button></div>
+    <div class="tw"><table style="min-width:0"><thead><tr><th>פריט</th><th>סכום ברירת מחדל</th><th>סוג</th><th></th></tr></thead><tbody id="catB"></tbody></table></div></div>
+</div>
+
+<div class="panel" id="plan"><h2>תוכניות חיוב</h2>
+  <div class="card"><div class="row"><button class="b" onclick="newPlan()">תוכנית חיוב חדשה</button><button class="b s" onclick="runDue()">הרץ חיובים שהגיע מועדם</button><button class="b s" onclick="advance()">קדם חודש (להדגמה)</button><span class="mu" id="tdy"></span></div>
+  <p class="mu">פריסה לתשלומים מחלקת סכום כולל למספר חיובים. חיוב חוזר גובה סכום קבוע כל חודש. במערכת האמיתית החיובים ירוצו אוטומטית בלילה.</p></div>
+  <div class="card tw"><table><thead><tr><th>תלמיד</th><th>סוג</th><th>סכום</th><th>התקדמות</th><th>אמצעי</th><th>חיוב הבא</th><th>סטטוס</th></tr></thead><tbody id="planB"></tbody></table></div>
+</div>
+
+<div class="panel" id="card"><h2>כרטיסים שמורים</h2>
+  <div class="row"><button class="b" onclick="addCard()">הוספת כרטיס</button></div>
+  <div class="card tw"><table><thead><tr><th>תלמיד</th><th>כרטיס</th><th>תוקף</th><th>בעל הכרטיס</th><th>תוכניות מקושרות</th><th></th></tr></thead><tbody id="cardB"></tbody></table></div>
+  <p class="mu">נשמר רק טוקן מחברת הסליקה, 4 ספרות אחרונות ותוקף. מספר הכרטיס המלא וה-CVV לא נשמרים במערכת.</p>
+</div>
+
+<div class="panel" id="chk"><h2>שיקים וקופה</h2>
+  <div class="tabs" data-g="chk"><button class="on" data-t="chk">שיקים דחויים</button><button data-t="cash">קופה מזומן</button></div>
+  <div class="tp on" data-g="chk" data-t="chk">
+    <div class="row"><button class="b" onclick="newChk()">רישום שיק</button><button class="b s" onclick="depositDue()">הפקד שיקים שהגיע מועדם</button></div>
+    <div class="card tw"><table><thead><tr><th>פירעון</th><th>תלמיד</th><th>מס' שיק</th><th>בנק</th><th>סכום</th><th>סטטוס</th><th></th></tr></thead><tbody id="chkB"></tbody></table></div>
+    <p class="mu">שיק מופיע ביתרה רק לאחר הפקדה. שיק שחזר מבטל את התשלום ומחייב עמלה לפי ההגדרות.</p>
+  </div>
+  <div class="tp" data-g="chk" data-t="cash">
+    <div class="card"><div class="grid"><div class="kpi"><b id="cashExp">₪0</b><span>מזומן שנאסף ולא נסגר</span></div><div class="kpi"><b id="cashN">0</b><span>תנועות פתוחות</span></div></div>
+    <button class="b" onclick="closeCash()">סגירת קופה</button></div>
+    <div class="card tw"><b>היסטוריית סגירות</b><table><thead><tr><th>תאריך</th><th>שעה</th><th>על ידי</th><th>צפוי</th><th>נספר</th><th>הפרש</th><th>הערות</th></tr></thead><tbody id="closeB"></tbody></table></div>
+  </div>
+</div>
+
+<div class="panel" id="bank"><h2>בנק והוראות קבע</h2>
+  <div class="row"><button class="b" onclick="$('#bf').click()">ייבוא דף בנק</button><button class="b s" onclick="masav()">הפקת קובץ מס״ב</button><input id="bf" type="file" accept=".csv,.xlsx,.txt" hidden></div>
+  <div class="card tw"><b>תנועות בנק</b><table><thead><tr><th>תאריך</th><th>תיאור</th><th>סכום</th><th>התאמה</th><th></th></tr></thead><tbody id="bankB"></tbody></table></div>
+  <div class="card tw"><b>הוראות קבע פעילות</b><table><thead><tr><th>תלמיד</th><th>סכום</th><th>בנק / חשבון</th><th>חיוב הבא</th></tr></thead><tbody id="soB"></tbody></table></div>
+</div>
+
+<div class="panel" id="rec"><h2>קבלות וזיכויים</h2>
+  <div class="row"><button class="b" data-perm="pay" onclick="payFlow()">קבלת תשלום והפקת קבלה</button></div>
+  <div class="card tw"><table><thead><tr><th>מס'</th><th>תאריך</th><th>על שם</th><th>סכום</th><th>סוג</th><th>נשלחה</th><th></th></tr></thead><tbody id="recB"></tbody></table></div>
+</div>
+
+<div class="panel" id="msg"><h2>גבייה והודעות</h2>
+  <div class="tabs" data-g="msg"><button class="on" data-t="debt">מעקב חייבים</button><button data-t="rules">תזכורות אוטומטיות</button><button data-t="hist">היסטוריית הודעות</button></div>
+  <div class="tp on" data-g="msg" data-t="debt">
+    <div class="row"><select id="dfAge" onchange="R()" aria-label="גיל חוב"><option value="0">כל החייבים</option><option value="30">חוב מעל 30 יום</option><option value="60">חוב מעל 60 יום</option><option value="90">חוב מעל 90 יום</option></select><label>יתרה מעל <input id="dfMin" type="number" value="0" min="0" style="width:100px" oninput="R()"></label><button class="b" onclick="sendMsg()">שליחת הודעה לקבוצה</button></div>
+    <div class="card tw"><table><thead><tr><th>משפחה</th><th>יתרה</th><th>גיל חוב</th><th>קשר אחרון</th><th>הבטחת תשלום</th><th></th></tr></thead><tbody id="debtB"></tbody></table></div>
+  </div>
+  <div class="tp" data-g="msg" data-t="rules"><div id="rulesB"></div><p class="mu">התבניות תומכות במשתנים: {הורה} {משפחה} {תלמיד} {יתרה} {קישור} {תאריך} {סכום} {סיבה}</p></div>
+  <div class="tp" data-g="msg" data-t="hist"><div class="card tw"><table><thead><tr><th>שעה</th><th>ערוץ</th><th>נמענים</th><th>תוכן</th><th>מקור</th></tr></thead><tbody id="msgB"></tbody></table></div></div>
+</div>
+
+<div class="panel" id="req"><h2>בקשות הורים</h2>
+  <p class="mu">בקשות שהורים שולחים מהפורטל: פריסת חוב, בקשת הנחה ועדכון פרטי קשר.</p>
+  <div class="card tw"><table><thead><tr><th>תאריך</th><th>משפחה</th><th>תלמיד</th><th>סוג</th><th>פרטים</th><th>סטטוס</th><th></th></tr></thead><tbody id="reqB"></tbody></table></div>
+</div>
+
+<div class="panel" id="portal"><h2>פורטל הורים (תצוגה מקדימה)</h2>
+  <div class="row"><label>הצג כהורה: <select id="pf" onchange="R()"></select></label><span class="mu">כך נראה הפורטל להורה. פעולות כאן נרשמות במערכת באמת (בהדגמה).</span></div>
+  <div id="portalOut"></div>
+</div>
+
+<div class="panel" id="rep"><h2>דוחות</h2>
+  <div class="row">
+    <button class="b" onclick="REP.debt()">חייבים וגיל חוב</button><button class="b" onclick="REP.cash()">לפי אמצעי תשלום</button><button class="b" onclick="REP.year()">לפי חודש</button><button class="b" onclick="REP.cls()">לפי כיתה</button>
+    <button class="b" onclick="REP.disc()">הנחות ומלגות</button><button class="b" onclick="REP.fails()">חיובים שנכשלו</button><button class="b" onclick="REP.chk()">שיקים</button><button class="b" onclick="REP.close()">סגירות קופה</button><button class="b" onclick="REP.acc()">הנהלת חשבונות</button>
+  </div>
+  <div id="repOut"></div>
+</div>
+
+<div class="panel" id="set"><h2>משתמשים והרשאות</h2>
+  <div class="row"><button class="b" onclick="addUsr()">משתמש חדש</button><button class="b s" onclick="backup()">גיבוי עכשיו</button><button class="b s" onclick="$('#rf').click()">שחזור מגיבוי</button><input id="rf" type="file" accept=".json" hidden></div>
+  <div class="card tw"><table><thead><tr><th>משתמש</th><th>אימייל</th><th>תפקיד</th><th>הרשאות</th><th>סטטוס</th></tr></thead><tbody id="usrB"></tbody></table><p class="mu">לחיצה על משתמש פותחת עריכת הרשאות.</p></div>
+  <div class="card tw"><b>הרשאות ברירת מחדל לפי תפקיד</b><table id="matrix"></table></div>
+  <div class="card"><div class="row"><b>יומן פעולות</b><input id="lf" placeholder="סינון לפי טקסט" oninput="R()" aria-label="סינון יומן"><button class="b s sm" onclick="logCsv()">ייצוא</button></div><div id="logB"></div></div>
+</div>
+
+<div class="panel" id="cfg"><h2>הגדרות וחיבורים</h2>
+  <div class="tabs" data-g="cfg"><button class="on" data-t="gen">כללי</button><button data-t="int">חיבורים</button><button data-t="sec">אבטחה</button><button data-t="yr">שנת לימודים</button></div>
+  <div class="tp on" data-g="cfg" data-t="gen"><div class="card"><div class="tw"><table style="min-width:0" id="genT"></table></div><div class="row" style="margin-top:12px"><button class="b" onclick="editCfg()">עריכת הגדרות</button></div></div></div>
+  <div class="tp" data-g="cfg" data-t="int"><div class="card tw"><table><thead><tr><th>שירות</th><th>סטטוס</th><th>פרטים</th><th></th></tr></thead><tbody id="intB"></tbody></table></div></div>
+  <div class="tp" data-g="cfg" data-t="sec">
+    <div class="card"><div class="tw"><table style="min-width:0" id="secT"></table></div></div>
+    <div class="card tw"><b>אירועי התחברות אחרונים</b><table><thead><tr><th>שעה</th><th>משתמש</th><th>אירוע</th><th>מכשיר</th></tr></thead><tbody><tr><td>08:02</td><td>רחל (מנהלת)</td><td>התחברות</td><td>Chrome · Windows</td></tr><tr><td>08:15</td><td>מזכירות</td><td>התחברות</td><td>Chrome · Windows</td></tr><tr><td>09:41</td><td>מזכירות</td><td>ניסיון כושל</td><td>Chrome · Windows</td></tr><tr><td>10:20</td><td>מורה</td><td>התחברות</td><td>Safari · iPhone</td></tr></tbody></table></div>
+  </div>
+  <div class="tp" data-g="cfg" data-t="yr"><div class="card"><p id="yrInfo"></p><button class="b" onclick="newYear()">פתיחת שנת לימודים חדשה</button><p class="mu">העלאת כיתות, סיום בוגרים ויצירת חיובי שכר לימוד חדשים. היתרות הקודמות נשמרות ועוברות אוטומטית.</p></div></div>
+</div>
+
+</main></div>
+<div id="modal"></div><div id="toast" role="status"></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const D=new Date();let T=new Date(D.getFullYear(),D.getMonth(),D.getDate());
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const pd=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const today=()=>iso(T);
+const days=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
+const addDays=(s,n)=>{const d=pd(s);return iso(new Date(d.getFullYear(),d.getMonth(),d.getDate()+n))};
+const fd=s=>s?s.split("-").reverse().join("/"):"";
+const he=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const r2=n=>Math.round(n*100)/100;
+const money=n=>(n<0?"‎-":"")+"₪"+Math.abs(r2(n)).toLocaleString("he-IL");
+const short=n=>n>=1000?"₪"+(n/1000).toFixed(n>=10000?0:1)+"K":"₪"+Math.round(n);
+const sum=(a,f)=>a.reduce((x,y)=>x+f(y),0);
+const now=()=>new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+const heD=d=>{try{return new Intl.DateTimeFormat("he-IL-u-ca-hebrew",{day:"numeric",month:"long",year:"numeric"}).format(d)}catch(e){return ""}};
+const dow=d=>d.toLocaleDateString("he-IL",{weekday:"long"});
+const KB='tabindex="0" onkeydown="if(event.key===\'Enter\')this.click()"';
+const CLS=["א'","ב'","ג'","ד'","ה'","ו'"];
+const TY={tuition:"שכר לימוד",reg:"דמי רישום",trip:"טיול",bus:"הסעות",meals:"ארוחות",books:"ספרים וציוד",other:"אחר",disc:"הנחה / מלגה",sib:"הנחת אחים",carry:"יתרה משנה קודמת"};
+
+const PERMS={stu_view:"צפייה בתלמידים ומשפחות",stu_edit:"הוספה ועריכת תלמידים",pay:"קבלת תשלומים וזיכויים",charges:"חיובים והנחות",cards:"כרטיסי אשראי שמורים",plans:"תוכניות חיוב",checks:"שיקים וקופה",bank:"בנק והוראות קבע",rec:"קבלות",msg:"גבייה והודעות",req:"בקשות הורים ופורטל",rep:"דוחות",users:"משתמשים והרשאות",settings:"הגדרות וחיבורים"};
+const ALL=Object.keys(PERMS);
+const ROLES={"מנהל מערכת":ALL,"גבייה":["stu_view","stu_edit","pay","charges","cards","plans","checks","rec","msg","req"],"קופאית":["stu_view","pay","checks","rec"],"הנהלת חשבונות":["stu_view","rec","rep","bank","checks"],"צפייה בלבד":["stu_view"]};
+
+const S={fam:[],stu:[],chg:[],pay:[],rec:[],bank:[],cards:[],plans:[],chk:[],close:[],col:[],req:[],msgs:[],log:[],
+ cat:[{n:"דמי רישום",amt:250,type:"reg"},{n:"טיול שנתי",amt:120,type:"trip"},{n:"הסעות - חודשי",amt:350,type:"bus"},{n:"ארוחות - חודשי",amt:200,type:"meals"},{n:"ספרים וציוד",amt:300,type:"books"}],
+ rules:[{id:1,n:"תזכורת 3 ימים לפני חיוב",on:true,ch:"SMS",txt:"שלום {הורה}, בתאריך {תאריך} יחויב כרטיסך בסך {סכום} עבור {תלמיד}."},
+  {id:2,n:"חיוב כרטיס נכשל",on:true,ch:"וואטסאפ",txt:"שלום {הורה}, החיוב עבור {תלמיד} לא עבר ({סיבה}). אנא עדכנו כרטיס: {קישור}"},
+  {id:3,n:"חוב מעל 30 יום",on:false,ch:"מייל",txt:"שלום {הורה}, קיימת יתרה פתוחה של {יתרה}. לתשלום: {קישור}"},
+  {id:4,n:"שליחת קבלה אוטומטית",on:true,ch:"מייל",txt:"שלום {הורה}, מצורפת קבלה על התשלום שבוצע. תודה."}],
+ cfg:{school:"בית ספר לדוגמה",yr:"תשפ״ז",sib:[0,10,20],chkFee:30,runAt:"02:00",backup:"יומי",twofa:true,timeout:30,minpw:10,lock:5},
+ integ:[{n:"חברת סליקה (אשראי)",on:true,det:"מצב בדיקה"},{n:"בנק - קבצי מס״ב",on:true,det:"קובץ ידני"},{n:"שירות SMS",on:true,det:"מכסה חודשית: 5,000"},{n:"וואטסאפ עסקי",on:false,det:""},{n:"דואר אלקטרוני (SMTP)",on:true,det:"office@school.co.il"},{n:"תוכנת הנהלת חשבונות",on:false,det:""}],
+ rn:3001,sid:1,fid:1,cid:1,plid:1,pid:1,chid:1,ckid:1,colid:1,rqid:1,cur:0,
+ users:[{n:"רחל (מנהלת)",e:"admin@school.co.il",r:"מנהל מערכת",p:[...ALL],on:true},{n:"מזכירות",e:"office@school.co.il",r:"גבייה",p:[...ROLES["גבייה"]],on:true},{n:"קופאית",e:"cash@school.co.il",r:"קופאית",p:[...ROLES["קופאית"]],on:true},{n:"מנהל חשבונות",e:"acc@school.co.il",r:"הנהלת חשבונות",p:[...ROLES["הנהלת חשבונות"]],on:true},{n:"מורה",e:"teacher@school.co.il",r:"צפייה בלבד",p:[...ROLES["צפייה בלבד"]],on:true}]};
+let seeding=true;
+const me=()=>S.users[S.cur],has=p=>me().p.includes(p);
+const can=p=>has(p)||(toast("אין לך הרשאה לפעולה זו"),false);
+const log=m=>S.log.unshift({t:now(),m:me().n+": "+m});
+const stu=id=>S.stu.find(s=>s.id===id),fam=id=>S.fam.find(f=>f.id===id);
+const kids=fid=>S.stu.filter(s=>s.fam===fid);
+const sn=id=>{const s=stu(id);return s?s.n:"(נמחק)"};
+const fn=id=>{const f=fam(id);return f?f.n:"?"};
+const sChg=id=>S.chg.filter(c=>c.stu===id),sPay=id=>S.pay.filter(p=>p.stu===id);
+const net=s=>sum(sChg(s.id),c=>c.amt),paidS=s=>sum(sPay(s.id),p=>p.amt);
+const bal=s=>net(s)-paidS(s);
+const fbal=f=>sum(kids(f.id),bal);
+const tuitionOf=s=>sum(sChg(s.id).filter(c=>c.type==="tuition"&&c.yr===S.cfg.yr),c=>c.amt);
+const rec=no=>S.rec.find(r=>r.no===no);
+const ruleOn=id=>{const r=S.rules.find(x=>x.id===id);return !!(r&&r.on)};
+const fill=(t,f,x={})=>t.replace(/\{([^}]+)\}/g,(m,k)=>({"הורה":f.par,"משפחה":f.n,"יתרה":money(fbal(f)),"תלמיד":kids(f.id).map(s=>s.n.split(" ")[0]).join(", "),"קישור":"pay.example.co.il/p/"+f.id+"x7","תאריך":"","סכום":"","סיבה":"",...x}[k]??m));
+
+/* ---------- UI helpers ---------- */
+function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(t._t);t._t=setTimeout(()=>t.style.display="none",2600)}
+function dl(n,x,t){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([x],{type:t}));a.download=n;a.click()}
+function modal(t,body,btns){$("#modal").innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-label="${he(t.replace(/<[^>]*>/g,""))}"><h3>${t}</h3>${body}<div class="row" id="mf" style="margin:14px 0 0"></div></div>`;
+ $("#modal").style.display="flex";btns.forEach(b=>{const e=document.createElement("button");e.className="b"+(b.s?" s":"");e.textContent=b.t;e.onclick=b.fn;$("#mf").append(e)});
+ const f=$("#modal .box").querySelector("input:not([type=hidden]),select,textarea");if(f)f.focus()}
+const close=()=>{$("#modal").style.display="none"};
+const done=(t,h,extra=[])=>modal(t,h,[...extra,{t:"סגור",s:1,fn:close}]);
+function proc(m,ms,next){modal(m,'<div class="spin"></div>',[]);setTimeout(next,ms)}
+function form(t,fields,ok,okT){
+ const h=fields.map(f=>`<label>${f.l}${f.o?`<select name="${f.k}">${f.o.map(o=>{const v=o.v??o;return `<option value="${he(v)}" ${String(v)===String(f.v)?"selected":""}>${he(o.t??o)}</option>`}).join("")}</select>`:f.t==="textarea"?`<textarea name="${f.k}" rows="3" placeholder="${he(f.p||"")}">${he(f.v??"")}</textarea>`:`<input name="${f.k}" type="${f.t||"text"}" ${f.t==="number"?'step="any"':""} value="${he(f.v??"")}" placeholder="${he(f.p||"")}" ${f.r?"required":""}>`}</label>`).join("");
+ modal(t,`<form id="mfm" class="cc">${h}</form><p id="err" class="bad" role="alert"></p>`,[{t:okT||"המשך",fn:()=>{const fm=$("#mfm");if(!fm.reportValidity())return;const er=ok(Object.fromEntries(new FormData(fm)));if(er)$("#err").textContent=er}},{t:"ביטול",s:1,fn:close}]);
+ $("#mfm").onsubmit=e=>{e.preventDefault();$("#mf button").click()}}
+function tab(g,t){$$(`.tabs[data-g="${g}"] button`).forEach(b=>b.classList.toggle("on",b.dataset.t===t));$$(`.tp[data-g="${g}"]`).forEach(p=>p.classList.toggle("on",p.dataset.t===t))}
+function nav(id){const b=document.querySelector(`nav button[data-p="${id}"]`);if(b&&b.style.display!=="none")b.click();else toast("אין הרשאה לפתוח מסך זה")}
+const sel=(arr,f)=>arr.map(f).join("");
+
+/* ---------- cards ---------- */
+const brand=d=>({4:"ויזה",5:"מאסטרקארד",3:"אמריקן אקספרס / דיינרס"}[d[0]]||"כרטיס");
+const expOk=e=>/^\d{2}\/\d{2}$/.test(e)&&+e.slice(0,2)>=1&&+e.slice(0,2)<=12;
+const expired=(e,d=today())=>new Date(2000+ +e.slice(3),+e.slice(0,2),1)<=pd(d);
+const cardLeft=c=>days(today(),iso(new Date(2000+ +c.e.slice(3),+c.e.slice(0,2),1)));
+const CF=[{k:"h",l:"שם בעל הכרטיס",r:1},{k:"id",l:"ת״ז בעל הכרטיס",r:1},{k:"c",l:"מספר כרטיס",p:"1234 5678 9012 3456",r:1},{k:"e",l:"תוקף (MM/YY)",p:"08/28",r:1},{k:"cv",l:"CVV",r:1}];
+function cardErr(v){const dg=v.c.replace(/\D/g,"");if(dg.length<13||dg.length>19)return "מספר כרטיס לא תקין";if(!expOk(v.e))return "תוקף בפורמט MM/YY";if(expired(v.e))return "הכרטיס פג תוקף";if(!/^\d{3,4}$/.test(v.cv))return "CVV לא תקין";return ""}
+function addTok(sid,v){const dg=v.c.replace(/\D/g,"");S.cards.push({id:S.cid++,stu:sid,l4:dg.slice(-4),br:brand(dg),e:v.e,h:v.h||"",def:!S.cards.some(c=>c.stu===sid)})}
+const cardTxt=c=>`${c.br} ****${c.l4} · תוקף ${c.e}${expired(c.e)?' <span class="pill r">פג תוקף</span>':""}${c.def?' <span class="pill g">ברירת מחדל</span>':""}`;
+const cardPlans=id=>S.plans.filter(p=>p.tk===id&&p.ch.some(c=>c.st==="w"||c.st==="f"));
+function addCard(sid,re){if(!can("cards")||!S.stu.length)return;
+ form("הוספת כרטיס שמור",[{k:"s",l:"תלמיד",v:sid,o:S.stu.map(s=>({v:s.id,t:s.n}))},...CF],v=>{const er=cardErr(v);if(er)return er;
+  proc("יוצר טוקן מאובטח אצל חברת הסליקה...",1300,()=>{addTok(+v.s,v);log("נשמר כרטיס לתלמיד "+sn(+v.s));R();done("הכרטיס נשמר","<p>נשמר כטוקן בלבד. מספר הכרטיס המלא וה-CVV אינם נשמרים.</p>",re?[{t:"חזרה לכרטיס התלמיד",fn:()=>stuView(+v.s)}]:[])})},"שמירה")}
+function delCard(id,re){if(!can("cards"))return;const c=S.cards.find(x=>x.id===id);
+ if(cardPlans(id).length)return toast("הכרטיס משויך לתוכנית חיוב פעילה. החלף כרטיס בתוכנית או בטל אותה קודם");
+ if(!confirm("להסיר את הכרטיס ****"+c.l4+"?"))return;S.cards=S.cards.filter(x=>x.id!==id);
+ if(!S.cards.some(x=>x.stu===c.stu&&x.def)){const f=S.cards.find(x=>x.stu===c.stu);if(f)f.def=true}
+ log("הוסר כרטיס ****"+c.l4);R();if(re)stuView(c.stu)}
+function setDef(id,re){if(!can("cards"))return;const c=S.cards.find(x=>x.id===id);S.cards.filter(x=>x.stu===c.stu).forEach(x=>x.def=x.id===id);R();if(re)stuView(c.stu)}
+
+/* ---------- ledger, aging ---------- */
+function ledger(ids){const rows=[];
+ S.chg.filter(c=>ids.includes(c.stu)).forEach(c=>rows.push({d:c.date,s:c.stu,t:c.desc,dr:c.amt>0?c.amt:0,cr:c.amt<0?-c.amt:0,o:0}));
+ S.pay.filter(p=>ids.includes(p.stu)).forEach(p=>rows.push({d:p.date,s:p.stu,t:(p.amt<0?"החזר / ביטול ":"תשלום ")+p.meth+(p.ref?" · "+p.ref:"")+" (קבלה "+p.rn+")",dr:p.amt<0?-p.amt:0,cr:p.amt>0?p.amt:0,o:1}));
+ rows.sort((a,b)=>a.d.localeCompare(b.d)||a.o-b.o);let r=0;rows.forEach(x=>{r+=x.dr-x.cr;x.bal=r});return rows}
+function ledgerTable(ids,showS){const rows=ledger(ids);
+ return `<div class="tw" style="max-height:280px;overflow:auto"><table style="min-width:0"><thead><tr><th>תאריך</th>${showS?"<th>תלמיד</th>":""}<th>תיאור</th><th>חיוב</th><th>זיכוי / תשלום</th><th>יתרה</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${fd(r.d)}</td>${showS?`<td>${he(sn(r.s))}</td>`:""}<td>${he(r.t)}</td><td>${r.dr?money(r.dr):""}</td><td>${r.cr?money(r.cr):""}</td><td>${money(r.bal)}</td></tr>`).join("")||`<tr><td colspan="${showS?6:5}">אין תנועות</td></tr>`}</tbody></table></div>`}
+function aging(sid){const cs=sChg(sid).filter(c=>c.amt>0).sort((a,b)=>a.date.localeCompare(b.date));
+ let credit=sum(sPay(sid),p=>p.amt)+sum(sChg(sid).filter(c=>c.amt<0),c=>-c.amt);const b=[0,0,0,0];
+ for(const c of cs){let r=c.amt;const u=Math.min(r,Math.max(credit,0));credit-=u;r-=u;if(r>0){const a=Math.max(0,days(c.date,today()));b[a<=30?0:a<=60?1:a<=90?2:3]+=r}}return b}
+const famAging=f=>kids(f.id).map(s=>aging(s.id)).reduce((a,b)=>a.map((x,i)=>x+b[i]),[0,0,0,0]);
+const AGEL=["שוטף","31-60 יום","61-90 יום","90+ יום"];
+const oldest=b=>{for(let i=3;i>=0;i--)if(b[i]>0.5)return i;return -1};
+const ageLbl=b=>{const i=oldest(b);return i<0?"-":AGEL[i]};
+const lastContact=fid=>{const c=S.col.filter(x=>x.fam===fid)[0];return c?c.d:""};
+const promiseOf=fid=>S.col.filter(x=>x.fam===fid&&x.pd&&!x.done).sort((a,b)=>a.pd.localeCompare(b.pd))[0];
+
+/* ---------- charges ---------- */
+function addCharge(sid,desc,amt,type,date,yr){S.chg.push({id:S.chid++,stu:sid,desc,amt,type,date:date||today(),yr:yr||S.cfg.yr})}
+function recalcSib(fid){const ks=kids(fid).filter(s=>s.st==="פעיל").sort((a,b)=>a.id-b.id);
+ kids(fid).forEach(s=>{S.chg=S.chg.filter(c=>!(c.stu===s.id&&c.type==="sib"&&c.yr===S.cfg.yr))});
+ ks.forEach((s,i)=>{const pct=S.cfg.sib[Math.min(i,S.cfg.sib.length-1)]||0,t=tuitionOf(s);if(i>0&&pct>0&&t>0)addCharge(s.id,`הנחת אחים (${pct}%)`,-Math.round(t*pct/100),"sib")})}
+function chargeFlow(sid){if(!can("charges")||!S.stu.length)return;
+ form("חיוב לתלמיד",[{k:"s",l:"תלמיד",v:sid,o:S.stu.map(s=>({v:s.id,t:s.n}))},{k:"t",l:"סוג",o:Object.keys(TY).filter(k=>!["disc","sib","tuition"].includes(k)).map(k=>({v:k,t:TY[k]}))},{k:"d",l:"תיאור",r:1},{k:"a",l:"סכום (₪)",t:"number",r:1},{k:"dt",l:"תאריך חיוב",t:"date",v:today(),r:1}],v=>{
+  if(+v.a<=0)return "יש להזין סכום חיובי";addCharge(+v.s,v.d,+v.a,v.t,v.dt);log(`חיוב ${money(+v.a)} ל${sn(+v.s)}: ${v.d}`);R();done("החיוב נרשם","<p>החיוב נוסף לספר החשבון של התלמיד.</p>")},"רישום")}
+function bulkCharge(){if(!can("charges"))return;
+ form("חיוב קבוצתי",[{k:"c",l:"פריט מהקטלוג",o:[...S.cat.map((c,i)=>({v:i,t:`${c.n} (${money(c.amt)})`})),{v:"x",t:"חיוב מותאם"}]},{k:"d",l:"תיאור (לחיוב מותאם)"},{k:"a",l:"סכום (ריק = לפי הקטלוג)",t:"number"},{k:"g",l:"למי",o:[{v:"",t:"כל התלמידים הפעילים"},...CLS.map(c=>({v:c,t:"כיתה "+c}))]},{k:"dt",l:"תאריך חיוב",t:"date",v:today(),r:1}],v=>{
+  const it=v.c==="x"?{n:v.d,amt:0,type:"other"}:S.cat[+v.c];const desc=v.c==="x"?v.d.trim():it.n,amt=+v.a||it.amt;
+  if(!desc)return "יש להזין תיאור";if(!(amt>0))return "יש להזין סכום חיובי";
+  const L=S.stu.filter(s=>s.st==="פעיל"&&(!v.g||s.c===v.g));if(!L.length)return "אין תלמידים מתאימים";
+  modal("אישור חיוב קבוצתי",`<p>${he(desc)} · ${money(amt)} לכל תלמיד<br>יווצרו <b>${L.length}</b> חיובים בסך <b>${money(amt*L.length)}</b>.</p>`,[{t:"אישור וחיוב",fn:()=>proc("יוצר חיובים...",1100,()=>{L.forEach(s=>addCharge(s.id,desc,amt,it.type,v.dt));log(`חיוב קבוצתי: ${desc}, ${L.length} תלמידים`);R();done("החיובים נוצרו",`<p>${L.length} חיובים נוספו.</p>`)})},{t:"ביטול",s:1,fn:close}])},"המשך")}
+function discFlow(sid,cb,pre){if(!can("charges")||!S.stu.length)return;pre=pre||{};
+ form("הנחה / מלגה",[{k:"s",l:"תלמיד",v:sid,o:S.stu.map(s=>({v:s.id,t:s.n}))},{k:"k",l:"סוג הנחה",v:pre.kind||"pct",o:[{v:"pct",t:"אחוז משכר הלימוד"},{v:"amt",t:"סכום קבוע"}]},{k:"v",l:"ערך (אחוז או ₪)",t:"number",r:1,v:pre.val},{k:"r",l:"סיבה",o:["מלגה","צורך משפחתי","בן / בת צוות","הנחה מיוחדת","אחר"]},{k:"n",l:"הערה פנימית"}],v=>{
+  const s=stu(+v.s),val=+v.v,t=tuitionOf(s);if(!(val>0))return "יש להזין ערך חיובי";if(t<=0)return "לתלמיד אין שכר לימוד לשנה הנוכחית";
+  if(v.k==="pct"&&val>100)return "אחוז הנחה עד 100";const a=v.k==="pct"?Math.round(t*val/100):val;if(a>t)return "ההנחה גדולה משכר הלימוד";
+  addCharge(s.id,`${v.r}${v.k==="pct"?` (${val}%)`:""}${v.n?" - "+v.n:""}`,-a,"disc");log(`הנחה ${money(a)} ל${s.n}: ${v.r}`);R();if(cb)cb();done("ההנחה נרשמה",`<p>${money(a)} הופחתו מהיתרה של ${he(s.n)}.</p>`)},"אישור")}
+function delChg(id){if(!can("charges"))return;const c=S.chg.find(x=>x.id===id);if(!confirm(`למחוק את החיוב "${c.desc}"?`))return;S.chg=S.chg.filter(x=>x.id!==id);log("נמחק חיוב: "+c.desc+" ל"+sn(c.stu));R()}
+function addCat(){if(!can("charges"))return;form("פריט חדש בקטלוג",[{k:"n",l:"שם הפריט",r:1},{k:"a",l:"סכום ברירת מחדל",t:"number",r:1},{k:"t",l:"סוג",o:Object.keys(TY).filter(k=>!["disc","sib","tuition","carry"].includes(k)).map(k=>({v:k,t:TY[k]}))}],v=>{if(+v.a<=0)return "סכום לא תקין";S.cat.push({n:v.n,amt:+v.a,type:v.t});log("נוסף פריט לקטלוג: "+v.n);R();close()},"הוספה")}
+function delCat(i){if(!can("charges"))return;S.cat.splice(i,1);R()}
+
+/* ---------- payments ---------- */
+function addPayMulti(parts,meth,date,ref,fid){const rn=S.rn++;parts.forEach(p=>S.pay.push({id:S.pid++,stu:p.stu,amt:p.amt,meth,date,ref,rn}));
+ const f=fam(fid);S.rec.unshift({no:rn,date,name:f?f.par:"",amt:sum(parts,p=>p.amt),sent:!seeding&&ruleOn(4),fam:fid,meth,ref});return rn}
+const addPay=(sid,amt,meth,date,ref)=>addPayMulti([{stu:sid,amt}],meth,date,ref,stu(sid).fam);
+function allocate(fid,amt){const ks=kids(fid).map(s=>({s,b:bal(s)})).sort((a,b)=>b.b-a.b);let left=amt;const parts=[];
+ ks.forEach(k=>{if(left<=0||k.b<=0)return;const x=r2(Math.min(left,k.b));parts.push({stu:k.s.id,amt:x});left=r2(left-x)});
+ if(left>0){if(parts.length)parts[0].amt=r2(parts[0].amt+left);else parts.push({stu:ks[0].s.id,amt:left})}return parts}
+function payCard(parts,fid,amt,who,onOk,portal){
+ const ids=kids(fid).map(s=>s.id),cs=S.cards.filter(c=>ids.includes(c.stu)),saveStu=parts[0].stu;
+ const fin=(ref,after)=>proc("מתחבר לחברת הסליקה...",1100,()=>proc("מאשר עסקה...",1000,()=>{const rn=addPayMulti(parts,"אשראי",today(),ref,fid);if(after)after();onOk(rn)}));
+ const nw=()=>form(`כרטיס חדש - ${who} - ${money(amt)}`,[...CF,{k:"sv",l:`לשמור את הכרטיס (יישמר אצל ${sn(saveStu)})?`,o:["כן","לא"]}],d=>{const er=cardErr(d);if(er)return er;fin("כרטיס ****"+d.c.replace(/\D/g,"").slice(-4),()=>{if(d.sv==="כן"&&(portal||has("cards")))addTok(saveStu,d)})},"חיוב");
+ if(!cs.length)return nw();
+ form(`כרטיס לחיוב - ${who} - ${money(amt)}`,[{k:"k",l:"כרטיס",v:(cs.find(c=>c.def)||cs[0]).id,o:[...cs.map(c=>({v:c.id,t:`${c.br} ****${c.l4} (${c.e}) · ${sn(c.stu)}`})),{v:"new",t:"כרטיס חדש"}]}],d=>{if(d.k==="new")return nw();const c=cs.find(x=>x.id==d.k);if(expired(c.e))return "הכרטיס פג תוקף, בחר כרטיס אחר";fin("כרטיס שמור ****"+c.l4)},"חיוב")}
+function payDone(rn,amt,parts,m){done("התשלום התקבל",`<p>${money(amt)} · ${m}${m==="אשראי"?`<br>מספר אישור: ${Math.floor(100000+Math.random()*900000)}`:""}<br>קבלה מס' <b>${rn}</b> הופקה${rec(rn)&&rec(rn).sent?" ונשלחה להורה":""}</p>${parts.length>1?`<p class="mu">חולק בין: ${parts.map(p=>he(sn(p.stu))+" "+money(p.amt)).join(" · ")}</p>`:""}`,[{t:"צפייה והדפסה",fn:()=>recView(rn)}])}
+function payFlow(target,meth){if(!can("pay"))return;if(!S.stu.length)return toast("יש להוסיף תלמיד תחילה");
+ const opts=[];S.fam.forEach(f=>{const ks=kids(f.id);if(!ks.length)return;if(ks.length>1)opts.push({v:"f"+f.id,t:`כל ${f.n} (יתרה ${money(fbal(f))})`});ks.forEach(s=>opts.push({v:"s"+s.id,t:`${s.n} (יתרה ${money(bal(s))})`}))});
+ form("קבלת תשלום",[{k:"s",l:"עבור",v:target,o:opts},{k:"a",l:"סכום (₪)",t:"number",r:1},{k:"m",l:"אמצעי תשלום",v:meth||"אשראי",o:["אשראי","העברה","מזומן","שיק"]}],v=>{
+  const isF=v.s[0]==="f",id=+v.s.slice(1),amt=+v.a,m=v.m;if(!(amt>0))return "יש להזין סכום חיובי";
+  const fid=isF?id:stu(id).fam,parts=isF?allocate(id,amt):[{stu:id,amt}],who=isF?fn(fid):sn(id);
+  const fin=(ref,date)=>proc("רושם...",600,()=>{const rn=addPayMulti(parts,m,date||today(),ref,fid);log(`${m}: ${who} ${money(amt)}`);R();payDone(rn,amt,parts,m)});
+  if(m==="שיק")return newChk(parts[0].stu,amt);
+  if(m==="אשראי")return payCard(parts,fid,amt,who,rn=>{log(`אשראי: ${who} ${money(amt)}`);R();payDone(rn,amt,parts,m)});
+  if(m==="העברה")return form(`פרטי העברה - ${who} - ${money(amt)}`,[{k:"b",l:"בנק מעביר",r:1},{k:"ref",l:"אסמכתא",r:1},{k:"d",l:"תאריך",t:"date",v:today(),r:1}],d=>{fin(d.ref,d.d)},"אישור ורישום");
+  form(`מזומן - ${who} - ${money(amt)}`,[{k:"by",l:"התקבל על ידי",r:1,v:me().n}],d=>{fin("קיבל: "+d.by)},"אישור ורישום")},"המשך")}
+
+/* ---------- receipts, refunds ---------- */
+function recView(no){const r=rec(no);if(!r)return;const ps=S.pay.filter(p=>p.rn===no),neg=r.amt<0;
+ modal((neg?"אישור זיכוי / החזר":"קבלה")+" מס' "+r.no+(r.cancelled?' <span class="pill r">מבוטלת</span>':""),`<p><b>${he(S.cfg.school)}</b><br>תאריך: ${fd(r.date)}<br>${neg?"הוחזר ל":"התקבל מאת"}: ${he(r.name)}<br>סכום: <b>${money(Math.abs(r.amt))}</b><br>אמצעי: ${he(r.meth||"")}${r.ref?" · "+he(r.ref):""}</p>${ps.length?`<table style="min-width:0"><tr><th>עבור</th><th>סכום</th></tr>${ps.map(p=>`<tr><td>${he(sn(p.stu))}</td><td>${money(p.amt)}</td></tr>`).join("")}</table>`:""}${r.credit?`<p class="mu">זיכוי לקבלה מס' ${r.credit}</p>`:""}`,
+ [{t:"הדפסה / PDF",fn:()=>window.print()},...(has("rec")?[{t:"שליחה במייל",s:1,fn:()=>recMail(no)}]:[]),...(has("pay")&&!r.cancelled&&!neg?[{t:"ביטול קבלה",s:1,fn:()=>cancelRec(no)}]:[]),{t:"סגור",s:1,fn:close}])}
+function recMail(no){if(!can("rec"))return;const f=fam(rec(no).fam);form("שליחת קבלה במייל",[{k:"e",l:"כתובת מייל",t:"email",r:1,v:f?f.em:""}],v=>{proc("שולח...",900,()=>{rec(no).sent=true;log("קבלה "+no+" נשלחה");R();done("נשלח","<p>הקבלה נשלחה ל-"+he(v.e)+"</p>")})},"שליחה")}
+function cancelRec(no){if(!can("pay"))return;const r=rec(no);if(r.cancelled||r.amt<0)return toast("לא ניתן לבטל קבלה זו");
+ form("ביטול קבלה מס' "+no,[{k:"r",l:"סיבת הביטול",r:1}],v=>{const nn=S.rn++;
+  S.pay.filter(p=>p.rn===no).forEach(p=>S.pay.push({id:S.pid++,stu:p.stu,amt:-p.amt,meth:p.meth,date:today(),ref:"ביטול קבלה "+no,rn:nn}));
+  r.cancelled=true;S.rec.unshift({no:nn,date:today(),name:r.name,amt:-r.amt,sent:false,fam:r.fam,meth:r.meth,ref:v.r,credit:no});
+  log(`בוטלה קבלה ${no}: ${v.r}`);R();done("הקבלה בוטלה",`<p>הופק אישור זיכוי מס' ${nn}. היתרות עודכנו.</p>`,[{t:"צפייה באישור",fn:()=>recView(nn)}])},"ביטול קבלה")}
+function refundFlow(sid){if(!can("pay"))return;const s=stu(sid),cr=-bal(s);if(cr<=0)return toast("אין יתרת זכות להחזר");
+ form("החזר כספי - "+s.n,[{k:"a",l:`סכום (עד ${money(cr)})`,t:"number",r:1,v:cr},{k:"m",l:"אמצעי החזר",o:["העברה","מזומן","אשראי"]},{k:"r",l:"סיבה",r:1}],v=>{const a=+v.a;if(!(a>0)||a>cr)return "סכום החזר לא תקין";
+  const rn=addPayMulti([{stu:sid,amt:-a}],v.m,today(),"החזר: "+v.r,s.fam);rec(rn).refund=true;log(`החזר ${money(a)} ל${s.n}`);R();done("ההחזר נרשם",`<p>הופק אישור החזר מס' ${rn}.</p>`,[{t:"צפייה",fn:()=>recView(rn)}])},"אישור החזר")}
+
+/* ---------- checks & cash ---------- */
+function newChk(sid,amt){if(!can("checks"))return;
+ form("רישום שיק",[{k:"s",l:"תלמיד",v:sid,o:S.stu.map(s=>({v:s.id,t:s.n}))},{k:"no",l:"מספר שיק",r:1},{k:"b",l:"בנק וסניף",r:1},{k:"a",l:"סכום",t:"number",v:amt,r:1},{k:"d",l:"תאריך פירעון",t:"date",v:today(),r:1}],v=>{
+  if(!(+v.a>0))return "סכום לא תקין";S.chk.push({id:S.ckid++,stu:+v.s,no:v.no,b:v.b,amt:+v.a,due:v.d,st:"ממתין"});log(`נרשם שיק ${v.no} ${money(+v.a)} ל${sn(+v.s)}`);R();done("השיק נרשם",`<p>השיק יופיע ביתרה לאחר ההפקדה בתאריך ${fd(v.d)}.</p>`)},"רישום")}
+function depositChk(id,q,date){const c=S.chk.find(x=>x.id===id);c.rn=addPay(c.stu,c.amt,"שיק",date||today(),"שיק "+c.no);c.st="הופקד";if(!q){log(`הופקד שיק ${c.no}`);R();toast("השיק הופקד וקבלה הופקה")}}
+function returnChk(id,q,date){const c=S.chk.find(x=>x.id===id);if(!q&&!confirm("לסמן את השיק כחוזר? התשלום יבוטל ותחויב עמלה."))return;
+ S.pay.push({id:S.pid++,stu:c.stu,amt:-c.amt,meth:"שיק",date:date||today(),ref:"שיק חוזר "+c.no,rn:c.rn});const r=rec(c.rn);if(r){r.cancelled=true}
+ addCharge(c.stu,"עמלת שיק חוזר "+c.no,S.cfg.chkFee,"other",date);c.st="חזר";if(!q){log(`שיק ${c.no} חזר`);R();toast("השיק סומן כחוזר")}}
+function cancelChk(id){if(!can("checks"))return;const c=S.chk.find(x=>x.id===id);if(confirm("לבטל את רישום השיק?")){c.st="בוטל";log("בוטל שיק "+c.no);R()}}
+function depositDue(){if(!can("checks"))return;const L=S.chk.filter(c=>c.st==="ממתין"&&c.due<=today());if(!L.length)return toast("אין שיקים שהגיע מועדם");
+ proc("מפקיד שיקים...",1200,()=>{L.forEach(c=>depositChk(c.id,true));log(`הופקדו ${L.length} שיקים`);R();done("ההפקדה הושלמה",`<p>${L.length} שיקים הופקדו בסך ${money(sum(L,c=>c.amt))}. הופקו קבלות.</p>`)})}
+const openCash=()=>S.pay.filter(p=>p.meth==="מזומן"&&!p.closed);
+function closeCash(){if(!can("checks"))return;const ex=r2(sum(openCash(),p=>p.amt));
+ form("סגירת קופה",[{k:"c",l:`סכום שנספר בפועל (צפוי: ${money(ex)})`,t:"number",r:1,v:ex},{k:"n",l:"הערות"}],v=>{const c=+v.c,diff=r2(c-ex);
+  const doit=()=>{const id=S.close.length+1;openCash().forEach(p=>p.closed=id);S.close.unshift({id,date:today(),t:now(),by:me().n,exp:ex,cnt:c,diff,n:v.n});log(`נסגרה קופה: צפוי ${money(ex)}, נספר ${money(c)}`);R();done("הקופה נסגרה",`<p>צפוי ${money(ex)} · נספר ${money(c)} · הפרש <b class="${diff?"bad":"ok"}">${money(diff)}</b></p>`)};
+  if(diff!==0)modal("יש הפרש בקופה",`<p>הפרש של ${money(diff)}. לסגור בכל זאת?</p>`,[{t:"סגירה",fn:doit},{t:"ביטול",s:1,fn:close}]);else doit()},"סגירה")}
+
+/* ---------- plans ---------- */
+const mLbl={"כרטיס":"אשראי","הוראת קבע":"הוראת קבע","העברה":"העברה"};
+const planLbl=p=>p.type==="inst"?`פריסה ל-${p.ch.length} תשלומים`:`חיוב חוזר חודשי${p.count?` (${p.count} חודשים)`:" (ללא הגבלה)"}`;
+function mk(type,amt,count,start){const n=count>0?count:24,[y,m,d]=start.split("-").map(Number),per=type==="inst"?Math.floor(amt/n):amt,out=[];
+ for(let i=0;i<n;i++){const dim=new Date(y,m+i,0).getDate();out.push({d:iso(new Date(y,m-1+i,Math.min(d,dim))),amt:type==="inst"&&i===n-1?amt-per*(n-1):per,st:"w"})}return out}
+function autoMsg(rid,p,c){if(seeding||!ruleOn(rid))return;const r=S.rules.find(x=>x.id===rid),f=fam(stu(p.stu).fam);S.msgs.unshift({t:now(),ch:r.ch,n:1,txt:fill(r.txt,f,{סיבה:c.err,תאריך:fd(c.d),סכום:money(c.amt)}),auto:true})}
+function chargeOne(p,i){const c=p.ch[i];c.err="";
+ if(p.method==="כרטיס"){const t=S.cards.find(x=>x.id===p.tk);if(!t)c.err="הכרטיס הוסר";else if(expired(t.e,c.d))c.err="הכרטיס פג תוקף"}
+ if(c.err){c.st="f";autoMsg(2,p,c);return false}
+ const t=S.cards.find(x=>x.id===p.tk);c.rn=addPay(p.stu,c.amt,mLbl[p.method],c.d,`${p.type==="inst"?"פריסה":"חיוב חוזר"} ${i+1}/${p.ch.length}${t?" ****"+t.l4:""}`);c.st="p";return true}
+const due=()=>S.plans.filter(p=>p.on).reduce((a,p)=>a+p.ch.filter(c=>c.st==="w"&&c.d<=today()).length,0);
+function runDue(){if(!can("plans"))return;const n=due();if(!n)return toast("אין חיובים שהגיע מועדם");
+ proc(`מבצע ${n} חיובים...`,1600,()=>{let ok=0,bad=0;S.plans.filter(p=>p.on).forEach(p=>p.ch.forEach((c,i)=>{if(c.st==="w"&&c.d<=today())chargeOne(p,i)?ok++:bad++}));
+  log(`הורצו חיובים: ${ok} הצליחו, ${bad} נכשלו`);R();done("סיכום חיובים",`<p>הצליחו: <b>${ok}</b><br>נכשלו: <b class="${bad?"bad":""}">${bad}</b></p>${bad?'<p class="mu">חיובים שנכשלו מופיעים בתוכנית עם אפשרות לנסות שוב. נשלחה הודעה להורה לפי הכלל האוטומטי.</p>':""}`)})}
+function advance(){T=new Date(T.getFullYear(),T.getMonth()+1,Math.min(T.getDate(),28));R();toast("תאריך ההדגמה קודם לחודש הבא")}
+function newPlan(sid){if(!can("plans"))return;if(!S.stu.length)return toast("יש להוסיף תלמיד תחילה");
+ form("תוכנית חיוב חדשה",[{k:"s",l:"תלמיד",v:sid,o:S.stu.map(s=>({v:s.id,t:`${s.n} (יתרה ${money(bal(s))})`}))},{k:"t",l:"סוג",o:[{v:"inst",t:"פריסה לתשלומים (סכום כולל)"},{v:"rec",t:"חיוב חוזר חודשי"}]},{k:"a",l:"סכום (פריסה: סכום כולל. חיוב חוזר: סכום חודשי)",t:"number",r:1},{k:"n",l:"מספר חיובים (בחיוב חוזר: 0 = עד הודעה חדשה)",t:"number",v:"6",r:1},{k:"d",l:"תאריך חיוב ראשון",t:"date",v:today(),r:1},{k:"m",l:"אמצעי חיוב",o:["כרטיס","הוראת קבע","העברה"]}],v=>{
+  const id=+v.s,n=+v.n,a=+v.a;if(a<=0)return "יש להזין סכום חיובי";
+  if(v.t==="inst"&&(n<2||n>36))return "פריסה: בין 2 ל-36 תשלומים";if(v.t==="rec"&&(n<0||n>60))return "חיוב חוזר: בין 0 ל-60 חודשים";
+  const P={id:S.plid++,stu:id,type:v.t,amt:a,count:n,method:v.m,on:true,tk:null,bank:null};const fin=()=>{P.ch=mk(P.type,a,n,v.d);confirmPlan(P)};
+  if(v.m==="כרטיס"){const cs=S.cards.filter(c=>c.stu===id);if(!cs.length)return "לתלמיד אין כרטיס שמור. הוסף כרטיס בכרטיס התלמיד או במסך כרטיסים שמורים";
+   form("בחירת כרטיס לחיוב",[{k:"k",l:"כרטיס",v:(cs.find(c=>c.def)||cs[0]).id,o:cs.map(c=>({v:c.id,t:`${c.br} ****${c.l4} (${c.e})`}))}],d=>{P.tk=+d.k;fin()},"המשך")}
+  else if(v.m==="הוראת קבע")form("פרטי הוראת קבע",[{k:"b",l:"בנק",r:1},{k:"br",l:"סניף",r:1},{k:"ac",l:"מספר חשבון",r:1}],d=>{P.bank=d;fin()},"המשך");
+  else fin()},"המשך")}
+function confirmPlan(P,onOk){const sh=P.ch.slice(0,6);
+ modal("אישור תוכנית חיוב",`<p><b>${he(sn(P.stu))}</b> · ${planLbl(P)}<br>אמצעי: ${mLbl[P.method]}${P.tk?" ****"+S.cards.find(c=>c.id===P.tk).l4:""}${P.type==="inst"?`<br>סכום כולל: ${money(P.amt)}`:`<br>סכום חודשי: ${money(P.amt)}`}</p>
+ <table style="min-width:0"><tr><th>#</th><th>תאריך</th><th>סכום</th></tr>${sh.map((c,i)=>`<tr><td>${i+1}</td><td>${fd(c.d)}</td><td>${money(c.amt)}</td></tr>`).join("")}${P.ch.length>6?`<tr><td colspan="3">ועוד ${P.ch.length-6} חיובים...</td></tr>`:""}</table>`,
+ [{t:"אישור ויצירה",fn:()=>proc("יוצר תוכנית...",900,()=>{S.plans.push(P);log(`נוצרה תוכנית: ${planLbl(P)} ל${sn(P.stu)}`);if(onOk)onOk();R();done("התוכנית נוצרה","<p>החיובים יבוצעו אוטומטית במועדם.</p>")})},{t:"ביטול",s:1,fn:close}])}
+const planSt=p=>p.ch.every(c=>c.st==="p"||c.st==="x")?["הסתיימה","g"]:p.ch.some(c=>c.st==="f")?["נכשל חיוב","r"]:p.on?["פעילה","g"]:["מושבתת","o"];
+const nextCh=p=>p.ch.find(c=>c.st==="w"||c.st==="f");
+function planView(id){const p=S.plans.find(x=>x.id===id),stt={w:["ממתין","o"],p:["שולם","g"],f:["נכשל","r"],x:["בוטל","o"]};
+ modal(he(sn(p.stu))+" · "+planLbl(p),`<div class="tw" style="max-height:300px;overflow:auto"><table style="min-width:0"><tr><th>#</th><th>תאריך</th><th>סכום</th><th>סטטוס</th><th></th></tr>${p.ch.slice(0,p.count?99:12).map((c,i)=>`<tr><td>${i+1}</td><td>${fd(c.d)}</td><td>${money(c.amt)}</td><td><span class="pill ${stt[c.st][1]}">${stt[c.st][0]}</span>${c.err?` <span class="bad">${he(c.err)}</span>`:""}</td><td>${c.st==="f"?`<button class="b s sm" onclick="retry(${p.id},${i})">נסה שוב</button>`:""}</td></tr>`).join("")}</table></div>${p.type==="rec"&&!p.count?'<p class="mu">חיוב ללא הגבלה: מוצגים 12 החיובים הקרובים.</p>':""}`,
+ [{t:p.on?"השהיה":"חידוש",fn:()=>{if(!can("plans"))return;p.on=!p.on;log((p.on?"חודשה":"הושהתה")+" תוכנית של "+sn(p.stu));R();planView(id)}},
+  ...(p.method==="כרטיס"?[{t:"החלפת כרטיס",s:1,fn:()=>swapCard(id)}]:[]),
+  {t:"ביטול החיובים הנותרים",s:1,fn:()=>{if(!can("plans"))return;if(confirm("לבטל את כל החיובים שטרם בוצעו?")){p.ch.forEach(c=>{if(c.st!=="p")c.st="x"});p.on=false;log("בוטלה תוכנית של "+sn(p.stu));R();planView(id)}}},{t:"סגור",s:1,fn:close}])}
+function retry(pid,i){if(!can("plans"))return;const p=S.plans.find(x=>x.id===pid);proc("מנסה לחייב שוב...",1200,()=>{const ok=chargeOne(p,i);log(ok?"חיוב חוזר הצליח":"חיוב חוזר נכשל");R();planView(pid);toast(ok?"החיוב הצליח":"החיוב נכשל: "+p.ch[i].err)})}
+function swapCard(pid){const p=S.plans.find(x=>x.id===pid),cs=S.cards.filter(c=>c.stu===p.stu);if(!cs.length)return toast("אין כרטיסים שמורים לתלמיד");
+ form("החלפת כרטיס בתוכנית",[{k:"k",l:"כרטיס",v:p.tk,o:cs.map(c=>({v:c.id,t:`${c.br} ****${c.l4} (${c.e})`}))}],v=>{p.tk=+v.k;log("הוחלף כרטיס בתוכנית של "+sn(p.stu));R();planView(pid)},"החלפה")}
+
+/* ---------- students & families ---------- */
+function addStu(fid){if(!can("stu_edit"))return;
+ form("תלמיד חדש",[{k:"f",l:"משפחה",v:fid||"new",o:[{v:"new",t:"משפחה חדשה"},...S.fam.map(f=>({v:f.id,t:f.n+" - "+f.par}))]},{k:"n",l:"שם התלמיד המלא",r:1},{k:"c",l:"כיתה",o:CLS},{k:"fee",l:"שכר לימוד שנתי (₪)",t:"number",r:1,v:"9600"},{k:"par",l:"שם ההורה (למשפחה חדשה)"},{k:"tel",l:"טלפון (למשפחה חדשה)",t:"tel"},{k:"em",l:"אימייל (למשפחה חדשה)",t:"email"}],v=>{
+  if(+v.fee<0)return "סכום לא תקין";let f;
+  if(v.f==="new"){if(!v.par.trim()||!v.tel.trim())return "במשפחה חדשה חובה למלא שם הורה וטלפון";f={id:S.fid++,n:"משפחת "+v.n.trim().split(" ").slice(-1)[0],par:v.par.trim(),tel:v.tel.trim(),em:v.em.trim(),addr:"",note:""};S.fam.push(f)}else f=fam(+v.f);
+  const s={id:S.sid++,n:v.n.trim(),c:v.c,fam:f.id,st:"פעיל"};S.stu.push(s);addCharge(s.id,"שכר לימוד "+S.cfg.yr,+v.fee,"tuition");recalcSib(f.id);log("נוסף תלמיד: "+s.n);R();
+  const d=tuitionOf(s)-net(s);done("התלמיד נוסף",`<p>נוצר חיוב שכר לימוד של ${money(+v.fee)}.${d>0?`<br>הוחלה הנחת אחים של ${money(d)}.`:""}</p>`,[{t:"פתיחת כרטיס תלמיד",fn:()=>stuView(s.id)}])},"שמירה")}
+function stuView(id){const s=stu(id);if(!s)return;const f=fam(s.fam),cs=S.cards.filter(c=>c.stu===id),pl=S.plans.filter(p=>p.stu===id),sib=kids(f.id).filter(x=>x.id!==id),b=bal(s),g=aging(id);
+ modal(he(s.n)+` <span class="pill ${s.st==="פעיל"?"g":"gr"}">${s.st}</span>`,`<p>כיתה ${he(s.c)} · <a href="#" onclick="famView(${f.id});return false">${he(f.n)}</a> · ${he(f.par)} · ${he(f.tel)}${sib.length?`<br>אחים: ${sib.map(x=>`<a href="#" onclick="stuView(${x.id});return false">${he(x.n)}</a>`).join(", ")}`:""}</p>
+ <div class="grid"><div class="kpi"><b>${money(net(s))}</b><span>חויב נטו</span></div><div class="kpi"><b>${money(paidS(s))}</b><span>שולם</span></div><div class="kpi"><b class="${b>0?"bad":"ok"}">${money(b)}</b><span>${b<0?"יתרת זכות":"יתרה"}</span></div></div>
+ ${b>0?`<p class="mu">גיל חוב: ${g.map((x,i)=>x>0?`${AGEL[i]} ${money(x)}`:"").filter(Boolean).join(" · ")}</p>`:""}
+ <b>ספר חשבון</b>${ledgerTable([id],false)}
+ <h4>כרטיסי אשראי שמורים</h4>${has("cards")?cs.map(c=>`<div class="chk">${cardTxt(c)} <button class="b s sm" onclick="setDef(${c.id},1)">ברירת מחדל</button> <button class="b s sm" onclick="delCard(${c.id},1)">הסר</button></div>`).join("")||'<div class="mu">אין כרטיסים שמורים</div>':'<div class="mu">אין הרשאה לצפייה בכרטיסים</div>'}
+ <h4>תוכניות חיוב</h4>${has("plans")?pl.map(p=>`<div class="chk">${planLbl(p)} · ${money(p.amt)} <span class="pill ${planSt(p)[1]}">${planSt(p)[0]}</span> <button class="b s sm" onclick="planView(${p.id})">פרטים</button></div>`).join("")||'<div class="mu">אין תוכניות</div>':'<div class="mu">אין הרשאה</div>'}`,
+ [...(has("pay")?[{t:"קבלת תשלום",fn:()=>payFlow("s"+id)}]:[]),...(has("charges")?[{t:"חיוב",s:1,fn:()=>chargeFlow(id)},{t:"הנחה / מלגה",s:1,fn:()=>discFlow(id)}]:[]),...(has("cards")?[{t:"הוספת כרטיס",s:1,fn:()=>addCard(id,1)}]:[]),...(has("plans")?[{t:"תוכנית חיוב",s:1,fn:()=>newPlan(id)}]:[]),
+  ...(has("pay")&&b<0?[{t:"החזר כספי",s:1,fn:()=>refundFlow(id)}]:[]),{t:"דף חשבון",s:1,fn:()=>statement(f.id)},
+  ...(has("stu_edit")?[{t:"שינוי סטטוס",s:1,fn:()=>stuStatus(id)},{t:"מחיקה",s:1,fn:()=>delStu(id)}]:[]),{t:"סגור",s:1,fn:close}])}
+function stuStatus(id){if(!can("stu_edit"))return;const s=stu(id);form("סטטוס תלמיד - "+s.n,[{k:"st",l:"סטטוס",v:s.st,o:["פעיל","עזב","סיים"]}],v=>{s.st=v.st;recalcSib(s.fam);log(`סטטוס ${s.n}: ${v.st}`);R();close();toast(v.st!=="פעיל"&&bal(s)>0?"התלמיד סומן. נותרה יתרת חוב לגבייה":"הסטטוס עודכן")},"שמירה")}
+function delStu(id){if(!can("stu_edit"))return;const s=stu(id);if(!confirm("למחוק את התלמיד, כרטיסיו, תוכניותיו, חיוביו ותשלומיו?"))return;
+ S.stu=S.stu.filter(x=>x.id!==id);[ "pay","chg","cards","plans","chk"].forEach(k=>S[k]=S[k].filter(x=>x.stu!==id));recalcSib(s.fam);log("נמחק תלמיד: "+s.n);R();close()}
+function famView(fid){const f=fam(fid);if(!f)return;const ks=kids(fid),pr=promiseOf(fid),notes=S.col.filter(x=>x.fam===fid);
+ modal(he(f.n),`<p>${he(f.par)} · ${he(f.tel)}${f.em?" · "+he(f.em):""}${f.addr?"<br>"+he(f.addr):""}</p>
+ <div class="tw"><table style="min-width:0"><tr><th>תלמיד</th><th>כיתה</th><th>יתרה</th></tr>${ks.map(s=>`<tr class="k" ${KB} onclick="stuView(${s.id})"><td>${he(s.n)}</td><td>${he(s.c)}</td><td>${money(bal(s))}</td></tr>`).join("")}<tr><th colspan="2">סה״כ משפחה</th><th>${money(fbal(f))}</th></tr></table></div>
+ ${pr?`<p class="al">הבטחת תשלום: ${money(pr.pa)} עד ${fd(pr.pd)} <button class="b s sm" onclick="donePromise(${pr.id},${fid})">סמן כבוצע</button></p>`:""}
+ <h4>מעקב גבייה</h4>${notes.map(n=>`<div class="chk"><span class="mu">${fd(n.d)} · ${he(n.by)}</span> <b>${he(n.t)}</b> ${he(n.n)}${n.pd?` · הבטחה ${money(n.pa)} ל-${fd(n.pd)}${n.done?" (בוצע)":""}`:""}</div>`).join("")||'<div class="mu">אין רישומים</div>'}`,
+ [...(has("pay")?[{t:"תשלום למשפחה",fn:()=>payFlow("f"+fid)}]:[]),...(has("msg")?[{t:"הערת גבייה",s:1,fn:()=>addNote(fid)}]:[]),...(has("stu_edit")?[{t:"הוספת תלמיד",s:1,fn:()=>addStu(fid)},{t:"עריכת פרטים",s:1,fn:()=>editFam(fid)}]:[]),{t:"דף חשבון",s:1,fn:()=>statement(fid)},{t:"סגור",s:1,fn:close}])}
+function editFam(fid){if(!can("stu_edit"))return;const f=fam(fid);form("פרטי משפחה",[{k:"par",l:"שם ההורה",v:f.par,r:1},{k:"tel",l:"טלפון",v:f.tel,t:"tel",r:1},{k:"em",l:"אימייל",v:f.em,t:"email"},{k:"addr",l:"כתובת",v:f.addr}],v=>{Object.assign(f,{par:v.par,tel:v.tel,em:v.em,addr:v.addr});log("עודכנו פרטי "+f.n);R();famView(fid)},"שמירה")}
+function statement(fid){const f=fam(fid),ids=kids(fid).map(s=>s.id),b=fbal(f);
+ modal("דף חשבון - "+he(f.n),`<p><b>${he(S.cfg.school)}</b><br>דף חשבון נכון ל-${fd(today())}<br>עבור: ${he(f.par)} · ${he(f.n)}</p>${ledgerTable(ids,true)}<p><b>יתרה לתשלום: <span class="${b>0?"bad":"ok"}">${money(b)}</span></b></p>`,
+ [{t:"הדפסה / PDF",fn:()=>window.print()},{t:"שליחה להורה",s:1,fn:()=>sendStmt(fid)},{t:"סגור",s:1,fn:close}])}
+function sendStmt(fid){const f=fam(fid);form("שליחת דף חשבון",[{k:"ch",l:"ערוץ",o:["מייל","וואטסאפ","SMS"]}],v=>{proc("שולח...",900,()=>{S.msgs.unshift({t:now(),ch:v.ch,n:1,txt:"דף חשבון - "+f.n});log("נשלח דף חשבון ל"+f.n);R();done("נשלח","<p>דף החשבון נשלח ל"+he(f.par)+".</p>")})},"שליחה")}
+$("#xl").onchange=e=>{if(!e.target.files.length)return;e.target.value="";if(!can("stu_edit"))return;proc("קורא את הקובץ...",1500,()=>{
+ [["ישראל מזרחי","ב'","חיים מזרחי"],["בנימין אזולאי","ג'","רפאל אזולאי"],["נתן ברק","א'","אלי ברק"],["זאב דהן","ה'","שלום דהן"],["עמרם סבג","ד'","יצחק סבג"]].forEach(a=>{const f={id:S.fid++,n:"משפחת "+a[0].split(" ")[1],par:a[2],tel:"050-0000000",em:"",addr:"",note:""};S.fam.push(f);const s={id:S.sid++,n:a[0],c:a[1],fam:f.id,st:"פעיל"};S.stu.push(s);addCharge(s.id,"שכר לימוד "+S.cfg.yr,9600,"tuition")});
+ log("יובאו 5 תלמידים מקובץ");R();done("הייבוא הסתיים","<p>נקלטו 5 תלמידים ו-5 משפחות. 0 שורות נדחו.</p>")})};
+
+/* ---------- collection ---------- */
+function addNote(fid){if(!can("msg"))return;
+ form("הערת גבייה - "+fn(fid),[{k:"t",l:"סוג",o:["שיחה","הודעה","פגישה","הבטחת תשלום"]},{k:"n",l:"הערה",r:1},{k:"pd",l:"תאריך הבטחה (בהבטחת תשלום)",t:"date"},{k:"pa",l:"סכום מובטח (בהבטחת תשלום)",t:"number"}],v=>{
+  const pr=v.t==="הבטחת תשלום";if(pr&&(!v.pd||!(+v.pa>0)))return "בהבטחת תשלום חובה תאריך וסכום";
+  S.col.unshift({id:S.colid++,fam:fid,d:today(),by:me().n,t:v.t,n:v.n,pd:pr?v.pd:"",pa:pr?+v.pa:0,done:false});log(`הערת גבייה ל${fn(fid)}: ${v.t}`);R();close();toast("הרישום נשמר")},"שמירה")}
+function donePromise(id,fid){const c=S.col.find(x=>x.id===id);c.done=true;log("הבטחת תשלום סומנה כבוצעה: "+fn(c.fam));R();if(fid)famView(fid)}
+function recipients(a){const L=S.fam.filter(f=>kids(f.id).length);
+ if(a==="fail")return L.filter(f=>S.plans.some(p=>kids(f.id).some(s=>s.id===p.stu)&&p.ch.some(c=>c.st==="f")));
+ return L.filter(f=>{const b=fbal(f);if(b<=0)return false;if(a==="all")return true;if(a==="big")return b>3000;if(a==="aged")return famAging(f).slice(1).some(x=>x>0.5);if(a[0]==="c")return kids(f.id).some(s=>s.c===a.slice(1));return false})}
+function sendMsg(){if(!can("msg"))return;
+ form("שליחת הודעה לקבוצה",[{k:"a",l:"נמענים",o:[{v:"all",t:"כל המשפחות החייבות"},{v:"big",t:"חוב מעל 3,000 ₪"},{v:"aged",t:"חוב מעל 30 יום"},{v:"fail",t:"משפחות עם חיוב שנכשל"},...CLS.map(c=>({v:"c"+c,t:"חייבים בכיתה "+c}))]},{k:"ch",l:"ערוץ",o:["SMS","וואטסאפ","מייל"]},{k:"t",l:"תבנית",o:[{v:"",t:"טקסט חופשי"},...S.rules.map(r=>({v:r.id,t:r.n}))]},{k:"x",l:"תוכן ההודעה",t:"textarea",v:"שלום {הורה}, נשארה יתרה לתשלום שכר לימוד בסך {יתרה}. לתשלום מהיר: {קישור}"}],v=>{
+  const L=recipients(v.a);if(!L.length)return "אין נמענים בקבוצה שנבחרה";const r=v.t?S.rules.find(x=>x.id==+v.t):null,txt=r?r.txt:v.x;if(!txt.trim())return "יש להזין תוכן";
+  modal("אישור שליחה",`<p>לשלוח ${L.length} הודעות ב${v.ch}?</p><p class="mu">דוגמה (${he(L[0].n)}):</p><p>${he(fill(txt,L[0]))}</p>`,[{t:"שליחה",fn:()=>proc("שולח הודעות...",1800,()=>{S.msgs.unshift({t:now(),ch:v.ch,n:L.length,txt});log(`נשלחו ${L.length} הודעות ב${v.ch}`);R();done("ההודעות נשלחו",`<p>${L.length} הודעות נמסרו.</p>`)})},{t:"ביטול",s:1,fn:close}])},"המשך")}
+function ruleEdit(id){if(!can("msg"))return;const r=S.rules.find(x=>x.id===id);
+ form("עריכת תזכורת - "+r.n,[{k:"ch",l:"ערוץ",v:r.ch,o:["SMS","וואטסאפ","מייל"]},{k:"on",l:"סטטוס",v:r.on?"1":"0",o:[{v:"1",t:"פעילה"},{v:"0",t:"כבויה"}]},{k:"x",l:"תבנית ההודעה",t:"textarea",v:r.txt}],v=>{r.ch=v.ch;r.on=v.on==="1";r.txt=v.x;log("עודכנה תזכורת: "+r.n);R();close()},"שמירה")}
+function ruleTest(id){const r=S.rules.find(x=>x.id===id);let n=0,ex=null;
+ if(id===1){const L=S.plans.filter(p=>p.on&&p.method==="כרטיס"&&p.ch.some(c=>c.st==="w"&&c.d>=today()&&c.d<=addDays(today(),3)));n=L.length;if(L[0])ex=fam(stu(L[0].stu).fam)}
+ else if(id===2){const L=recipients("fail");n=L.length;ex=L[0]}
+ else if(id===3){const L=recipients("aged");n=L.length;ex=L[0]}
+ else{const L=S.rec.filter(x=>!x.sent&&x.amt>0);n=L.length;ex=L[0]?fam(L[0].fam):null}
+ modal("בדיקת כלל: "+he(r.n),`<p>הכלל היה שולח כעת <b>${n}</b> הודעות ב${r.ch}.</p>${ex?`<p class="mu">דוגמה:</p><p>${he(fill(r.txt,ex))}</p>`:""}`,[{t:"שלח עכשיו (הדמיה)",fn:()=>{if(!can("msg"))return;if(!n)return toast("אין נמענים");if(id===4)S.rec.forEach(x=>{if(x.amt>0)x.sent=true});S.msgs.unshift({t:now(),ch:r.ch,n,txt:r.txt});log(`הורצה תזכורת: ${r.n} (${n})`);R();close();toast(n+" הודעות נשלחו")}},{t:"סגור",s:1,fn:close}])}
+
+/* ---------- parent portal & requests ---------- */
+function portalPay(fid){const f=fam(fid),b=fbal(f);if(b<=0)return;
+ form("תשלום - "+f.n,[{k:"a",l:"סכום לתשלום (₪)",t:"number",r:1,v:b}],v=>{const a=+v.a;if(!(a>0))return "סכום לא תקין";const parts=allocate(fid,a);
+  payCard(parts,fid,a,f.n,rn=>{log(`פורטל הורים: ${f.par} שילם ${money(a)}`);R();payDone(rn,a,parts,"אשראי")},true)},"המשך לתשלום")}
+function bigKid(fid){return kids(fid).slice().sort((a,b)=>bal(b)-bal(a))[0]}
+function portalPlan(fid){const f=fam(fid),k=bigKid(fid);if(bal(k)<=0)return toast("אין יתרה לפריסה");
+ form("בקשת פריסה",[{k:"m",l:"מספר חודשים",o:["3","6","9","12"]},{k:"p",l:"אמצעי חיוב מועדף",o:["כרטיס","הוראת קבע","העברה"]},{k:"n",l:"הערה לבית הספר",t:"textarea"}],v=>{
+  S.req.unshift({id:S.rqid++,date:today(),fam:fid,stu:k.id,type:"פריסה",det:{months:+v.m,method:v.p},note:v.n,st:"ממתין"});log("פורטל הורים: בקשת פריסה מ"+f.n);R();done("הבקשה נשלחה","<p>בית הספר יחזור אליך לאחר בדיקה.</p>")},"שליחה")}
+function portalDisc(fid){const f=fam(fid),k=bigKid(fid);
+ form("בקשת הנחה",[{k:"p",l:"אחוז הנחה מבוקש",t:"number",r:1,v:10},{k:"n",l:"פירוט הבקשה",t:"textarea",r:0}],v=>{if(!(+v.p>0&&+v.p<=100))return "אחוז בין 1 ל-100";
+  S.req.unshift({id:S.rqid++,date:today(),fam:fid,stu:k.id,type:"הנחה",det:{pct:+v.p},note:v.n,st:"ממתין"});log("פורטל הורים: בקשת הנחה מ"+f.n);R();done("הבקשה נשלחה","<p>הבקשה הועברה לאישור הנהלה.</p>")},"שליחה")}
+function portalInfo(fid){const f=fam(fid);form("עדכון פרטי קשר",[{k:"tel",l:"טלפון",t:"tel",v:f.tel,r:1},{k:"em",l:"אימייל",t:"email",v:f.em}],v=>{
+  S.req.unshift({id:S.rqid++,date:today(),fam:fid,stu:kids(fid)[0].id,type:"עדכון פרטים",det:{tel:v.tel,em:v.em},note:"",st:"ממתין"});log("פורטל הורים: עדכון פרטים מ"+f.n);R();done("הבקשה נשלחה","<p>הפרטים יתעדכנו לאחר אישור המזכירות.</p>")},"שליחה")}
+const reqDet=r=>r.type==="פריסה"?`${r.det.months} חודשים · ${r.det.method}`:r.type==="הנחה"?`${r.det.pct}%`:`טלפון ${r.det.tel}${r.det.em?" · "+r.det.em:""}`;
+function reqApprove(id){if(!can("req"))return;const r=S.req.find(x=>x.id===id),s=stu(r.stu),f=fam(r.fam);
+ const ok=()=>{r.st="אושרה";log(`אושרה בקשת ${r.type} של ${f.n}`);R()};
+ if(r.type==="עדכון פרטים"){f.tel=r.det.tel;if(r.det.em)f.em=r.det.em;ok();return toast("הפרטים עודכנו")}
+ if(r.type==="הנחה")return discFlow(r.stu,ok,{kind:"pct",val:r.det.pct});
+ const b=bal(s);if(b<=0)return toast("אין יתרה לפריסה");const cs=S.cards.filter(c=>c.stu===s.id),m=r.det.method==="כרטיס"&&!cs.length?"העברה":r.det.method;
+ const P={id:S.plid++,stu:s.id,type:"inst",amt:b,count:r.det.months,method:m,on:true,tk:m==="כרטיס"?(cs.find(c=>c.def)||cs[0]).id:null,bank:m==="הוראת קבע"?{b:"לא הוזן",br:"",ac:""}:null};
+ P.ch=mk("inst",b,r.det.months,addDays(today(),30));confirmPlan(P,ok)}
+function reqReject(id){if(!can("req"))return;const r=S.req.find(x=>x.id===id);form("דחיית בקשה",[{k:"r",l:"סיבה (תישלח להורה)",r:1}],v=>{r.st="נדחתה";r.reason=v.r;log(`נדחתה בקשת ${r.type} של ${fn(r.fam)}`);R();close()},"דחייה")}
+
+/* ---------- bank ---------- */
+$("#bf").onchange=e=>{if(!e.target.files.length)return;e.target.value="";if(!can("bank"))return;proc("קורא דף בנק ומתאים תנועות...",1700,()=>{
+ S.fam.filter(f=>fbal(f)>0).slice(0,3).forEach(f=>S.bank.push({d:today(),desc:"העברה מ"+f.par,amt:Math.min(fbal(f),2400),m:f.id,st:"p"}));
+ S.bank.push({d:today(),desc:"העברה מס' "+Math.floor(10000+Math.random()*89999),amt:1000,m:null,st:"p"});
+ log("יובא דף בנק");R();done("הייבוא הסתיים","<p>זוהו תנועות. אשר או שייך כל תנועה בטבלה.</p>")})};
+function bankOk(i){if(!can("bank"))return;const b=S.bank[i];
+ const reg=m=>{const parts=allocate(m,b.amt),rn=addPayMulti(parts,"העברה",b.d,b.desc,m);b.st="ok";b.m=m;log(`העברה נרשמה: ${fn(m)} ${money(b.amt)}`);R();done("נרשם",`<p>קבלה מס' ${rn} הופקה.</p>`)};
+ if(b.m)reg(b.m);else form("שיוך תנועה",[{k:"f",l:"משפחה",o:S.fam.map(f=>({v:f.id,t:f.n+" - "+f.par}))}],v=>{reg(+v.f)},"שיוך")}
+const sos=()=>S.plans.filter(p=>p.on&&p.method==="הוראת קבע"&&nextCh(p));
+function masav(){if(!can("bank"))return;if(!sos().length)return toast("אין הוראות קבע פעילות");
+ proc("מפיק קובץ...",1200,()=>{dl("masav-demo.txt","קובץ הדגמה\n"+sos().map(p=>[nextCh(p).d,sn(p.stu),p.bank.b,p.bank.ac,nextCh(p).amt].join("|")).join("\n"),"text/plain");log("הופק קובץ מס״ב");R();done("הקובץ הופק",`<p>${sos().length} הוראות בקובץ.</p>`)})}
+
+/* ---------- reports ---------- */
+let _r=[];
+function rep(t,h,rows){if(!can("rep"))return;_r=[h,...rows];$("#repOut").innerHTML=`<div class="card"><div class="row"><b>${he(t)}</b><button class="b s" onclick="csv()">ייצוא לאקסל (CSV)</button></div><div class="tw"><table><tr>${h.map(x=>`<th>${he(x)}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${he(x)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${h.length}">אין נתונים</td></tr>`}</table></div></div>`;log("הופק דוח: "+t);R()}
+const csv=()=>dl("report.csv","﻿"+_r.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\n"),"text/csv");
+const REP={
+ debt:()=>rep("חייבים וגיל חוב",["תלמיד","משפחה","שוטף","31-60","61-90","90+","יתרה"],S.stu.filter(s=>bal(s)>0).sort((a,b)=>bal(b)-bal(a)).map(s=>[s.n,fn(s.fam),...aging(s.id).map(money),money(bal(s))])),
+ cash:()=>{const m={};S.pay.forEach(p=>m[p.meth]=(m[p.meth]||0)+p.amt);rep("סיכום לפי אמצעי תשלום",["אמצעי","סכום"],Object.entries(m).map(e=>[e[0],money(e[1])]))},
+ year:()=>{const m={};S.pay.forEach(p=>{const k=p.date.slice(0,7);m[k]=(m[k]||0)+p.amt});rep("גבייה לפי חודש",["חודש","סכום"],Object.keys(m).sort().map(k=>[k.split("-").reverse().join("/"),money(m[k])]))},
+ cls:()=>rep("גבייה לפי כיתה",["כיתה","חויב נטו","שולם","יתרה","אחוז גבייה"],CLS.map(c=>{const L=S.stu.filter(s=>s.c===c&&s.st==="פעיל"),n=sum(L,net),p=sum(L,paidS);return [c,money(n),money(p),money(n-p),n>0?Math.round(p/n*100)+"%":"-"]})),
+ disc:()=>rep("הנחות ומלגות",["תאריך","תלמיד","תיאור","סכום"],S.chg.filter(c=>c.amt<0).sort((a,b)=>b.date.localeCompare(a.date)).map(c=>[fd(c.date),sn(c.stu),c.desc,money(-c.amt)])),
+ fails:()=>{const rows=[];S.plans.forEach(p=>p.ch.forEach((c,i)=>{if(c.st==="f")rows.push([sn(p.stu),planLbl(p),fd(c.d),money(c.amt),c.err])}));rep("חיובים שנכשלו",["תלמיד","תוכנית","תאריך","סכום","סיבה"],rows)},
+ chk:()=>rep("שיקים",["פירעון","תלמיד","שיק","בנק","סכום","סטטוס"],S.chk.map(c=>[fd(c.due),sn(c.stu),c.no,c.b,money(c.amt),c.st])),
+ close:()=>rep("סגירות קופה",["תאריך","שעה","על ידי","צפוי","נספר","הפרש"],S.close.map(c=>[fd(c.date),c.t,c.by,money(c.exp),money(c.cnt),money(c.diff)])),
+ acc:()=>rep("ייצוא להנהלת חשבונות",["קבלה","תאריך","תלמיד","סכום","אמצעי"],S.pay.map(p=>[p.rn,fd(p.date),sn(p.stu),p.amt,p.meth]))};
+
+/* ---------- users, settings ---------- */
+function addUsr(){if(!can("users"))return;form("משתמש חדש",[{k:"n",l:"שם",r:1},{k:"e",l:"אימייל",t:"email",r:1},{k:"r",l:"תפקיד",o:Object.keys(ROLES)},{k:"pw",l:"סיסמה זמנית",r:1}],v=>{
+ if(v.pw.length<S.cfg.minpw)return `הסיסמה חייבת לכלול לפחות ${S.cfg.minpw} תווים`;
+ proc("יוצר משתמש...",900,()=>{S.users.push({n:v.n,e:v.e,r:v.r,p:[...ROLES[v.r]],on:true});log("נוצר משתמש: "+v.n);R();done("המשתמש נוצר","<p>נשלחה הזמנה ל-"+he(v.e)+". ההרשאות נטענו לפי התפקיד.</p>",[{t:"עריכת הרשאות",fn:()=>editUsr(S.users.length-1)}])})},"יצירה")}
+function editUsr(i){if(!can("users"))return;const u=S.users[i];
+ modal(he(u.n),`<p class="mu">${he(u.e)}</p><label class="cc">תפקיד (טוען הרשאות ברירת מחדל)<select id="ur" onchange="roleFill()">${Object.keys(ROLES).map(r=>`<option ${r===u.r?"selected":""}>${r}</option>`).join("")}<option ${ROLES[u.r]?"":"selected"}>מותאם אישית</option></select></label>
+ <div id="pl" style="margin:10px 0">${ALL.map(k=>`<label class="chk"><input type="checkbox" value="${k}" ${u.p.includes(k)?"checked":""}> ${PERMS[k]}</label>`).join("")}</div>
+ <label class="chk"><input type="checkbox" id="uo" ${u.on?"checked":""}> משתמש פעיל</label><p id="err" class="bad" role="alert"></p>`,
+ [{t:"שמירה",fn:()=>{const p=[...document.querySelectorAll("#pl input:checked")].map(x=>x.value),on=$("#uo").checked,s=$("#ur").value,pr=ROLES[s];
+  const adm=S.users.filter((x,j)=>j!==i&&x.on&&x.p.includes("users")).length;
+  if(i===S.cur&&(!p.includes("users")||!on))return $("#err").textContent="אי אפשר להסיר מעצמך ניהול משתמשים או להשבית את עצמך";
+  if(!adm&&(!p.includes("users")||!on))return $("#err").textContent="חייב להישאר לפחות מנהל פעיל אחד";
+  u.p=p;u.on=on;u.r=pr&&pr.length===p.length&&p.every(x=>pr.includes(x))?s:"מותאם אישית";log("עודכנו הרשאות: "+u.n);R();close();toast("ההרשאות נשמרו")}},{t:"ביטול",s:1,fn:close}])}
+function roleFill(){const r=ROLES[$("#ur").value];if(r)$$("#pl input").forEach(x=>x.checked=r.includes(x.value))}
+function switchU(){S.cur=+$("#who").value;applyNav();R();toast("מחובר כ"+me().n)}
+function applyNav(){$$("[data-perm]").forEach(e=>e.style.display=has(e.dataset.perm)?"":"none");
+ const on=document.querySelector("nav button.on");if(on&&on.style.display==="none")document.querySelector('nav [data-p="dash"]').click()}
+function backup(){if(!can("users"))return;proc("מגבה...",1200,()=>{dl("backup-demo.json",JSON.stringify(S),"application/json");log("בוצע גיבוי");R();done("הגיבוי הושלם","<p>הקובץ ירד למחשב.</p>")})}
+$("#rf").onchange=e=>{const f=e.target.files[0];e.target.value="";if(!f||!can("users"))return;const r=new FileReader();
+ r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.stu)||!Array.isArray(d.pay)||!Array.isArray(d.users)||!d.cfg)throw 0;
+  if(confirm("השחזור יחליף את כל הנתונים הנוכחיים. להמשיך?")){Object.keys(d).forEach(k=>S[k]=d[k]);S.cur=0;R();toast("הנתונים שוחזרו")}}catch(_){toast("קובץ גיבוי לא תקין")}};r.readAsText(f)};
+const logCsv=()=>dl("audit-log.csv","﻿"+S.log.map(l=>[l.t,l.m].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\n"),"text/csv");
+function editCfg(){if(!can("settings"))return;const c=S.cfg;
+ form("הגדרות כלליות",[{k:"school",l:"שם בית הספר",v:c.school,r:1},{k:"s2",l:"הנחת אחים - ילד שני (%)",t:"number",v:c.sib[1],r:1},{k:"s3",l:"הנחת אחים - ילד שלישי ואילך (%)",t:"number",v:c.sib[2],r:1},{k:"fee",l:"עמלת שיק חוזר (₪)",t:"number",v:c.chkFee,r:1},{k:"run",l:"שעת הרצת חיובים אוטומטית",t:"time",v:c.runAt,r:1},{k:"bk",l:"תדירות גיבוי",v:c.backup,o:["יומי","שבועי"]}],v=>{
+  if([v.s2,v.s3].some(x=>+x<0||+x>100))return "אחוזי הנחה בין 0 ל-100";if(+v.fee<0)return "עמלה לא תקינה";
+  Object.assign(c,{school:v.school,sib:[0,+v.s2,+v.s3],chkFee:+v.fee,runAt:v.run,backup:v.bk});S.fam.forEach(f=>recalcSib(f.id));log("עודכנו הגדרות כלליות");R();close();toast("ההגדרות נשמרו וההנחות חושבו מחדש")},"שמירה")}
+function testInteg(i){const x=S.integ[i];proc("בודק חיבור...",1100,()=>{done(x.on?"החיבור תקין":"אין חיבור",x.on?`<p>${he(x.n)}: תשובה תוך 0.4 שניות.</p>`:`<p>${he(x.n)} לא הוגדר.</p>`)})}
+function editInteg(i){if(!can("settings"))return;const x=S.integ[i];
+ if(x.on)return modal("ניתוק "+he(x.n),"<p>לנתק את השירות?</p>",[{t:"ניתוק",fn:()=>{x.on=false;x.det="";log("נותק: "+x.n);R();close()}},{t:"ביטול",s:1,fn:close}]);
+ form("חיבור "+x.n,[{k:"k",l:"מפתח / שם משתמש",r:1},{k:"s",l:"סוד / סיסמה",t:"password",r:1},{k:"m",l:"מצב",o:["בדיקה","ייצור"]}],v=>{proc("מתחבר...",1200,()=>{x.on=true;x.det="מצב "+v.m;log("חובר: "+x.n);R();done("החיבור הוגדר","<p>בהדגמה לא נשמרים פרטי חיבור.</p>")})},"חיבור")}
+function toggleSec(k){if(!can("settings"))return;S.cfg[k]=!S.cfg[k];log("שונתה הגדרת אבטחה");R()}
+function newYear(){if(!can("settings"))return;
+ form("פתיחת שנת לימודים חדשה",[{k:"y",l:"שם השנה",r:1,v:"תשפ״ח"},{k:"fee",l:"שכר לימוד שנתי לתלמיד (₪)",t:"number",r:1,v:"9900"},{k:"d",l:"תאריך חיוב",t:"date",v:today(),r:1}],v=>{
+  if(v.y===S.cfg.yr)return "שנה זו כבר פעילה";const act=S.stu.filter(s=>s.st==="פעיל"),grad=act.filter(s=>s.c==="ו'"),cont=act.length-grad.length;
+  modal("אישור פתיחת שנה",`<p>שנה: <b>${he(v.y)}</b><br>תלמידים שיעלו כיתה: <b>${cont}</b><br>בוגרים (כיתה ו') שיסומנו כסיימו: <b>${grad.length}</b><br>חיובי שכר לימוד חדשים: <b>${cont}</b> בסך <b>${money(cont*+v.fee)}</b> (לפני הנחות אחים)</p><p class="mu">יתרות קודמות נשארות ועוברות אוטומטית.</p>`,
+  [{t:"אישור והפעלה",fn:()=>proc("פותח שנה...",1500,()=>{S.cfg.yr=v.y;act.forEach(s=>{if(s.c==="ו'")s.st="סיים";else{s.c=CLS[CLS.indexOf(s.c)+1];addCharge(s.id,"שכר לימוד "+v.y,+v.fee,"tuition",v.d)}});S.fam.forEach(f=>recalcSib(f.id));log("נפתחה שנת לימודים "+v.y);R();done("השנה נפתחה",`<p>עלו כיתה ${cont} תלמידים, ${grad.length} סיימו.</p>`)})},{t:"ביטול",s:1,fn:close}])},"המשך")}
+
+/* ---------- alerts & search ---------- */
+function alerts(){const a=[];
+ const fails=sum(S.plans,p=>p.ch.filter(c=>c.st==="f").length);if(fails)a.push({l:"bad",t:`${fails} חיובים נכשלו ודורשים טיפול`,go:()=>nav("plan")});
+ const dn=due();if(dn)a.push({l:"warn",t:`${dn} חיובים הגיע מועדם ועדיין לא בוצעו`,go:()=>nav("plan")});
+ S.cards.forEach(c=>{if(!S.plans.some(p=>p.tk===c.id&&p.on&&nextCh(p)))return;const l=cardLeft(c);if(l<=0)a.push({l:"bad",t:`כרטיס ****${c.l4} של ${sn(c.stu)} פג תוקף ומשויך לתוכנית`,go:()=>nav("card")});else if(l<=60)a.push({l:"warn",t:`כרטיס ****${c.l4} של ${sn(c.stu)} יפוג בעוד ${l} ימים`,go:()=>nav("card")})});
+ const ov=S.chk.filter(c=>c.st==="ממתין"&&c.due<today()).length,sn7=S.chk.filter(c=>c.st==="ממתין"&&c.due>=today()&&c.due<=addDays(today(),7)).length;
+ if(ov)a.push({l:"warn",t:`${ov} שיקים עבר מועד הפירעון שלהם ועדיין לא הופקדו`,go:()=>nav("chk")});if(sn7)a.push({l:"info",t:`${sn7} שיקים לפירעון בשבוע הקרוב`,go:()=>nav("chk")});
+ const pr=S.col.filter(c=>c.pd&&!c.done&&c.pd<=addDays(today(),3)).length;if(pr)a.push({l:"warn",t:`${pr} הבטחות תשלום מגיעות בימים הקרובים או שעברו`,go:()=>nav("msg")});
+ const old=S.fam.filter(f=>famAging(f)[3]>0.5).length;if(old)a.push({l:"bad",t:`${old} משפחות עם חוב מעל 90 יום`,go:()=>nav("msg")});
+ const ub=S.bank.filter(b=>b.st!=="ok").length;if(ub)a.push({l:"info",t:`${ub} תנועות בנק ממתינות לאישור`,go:()=>nav("bank")});
+ const rq=S.req.filter(r=>r.st==="ממתין").length;if(rq)a.push({l:"info",t:`${rq} בקשות הורים ממתינות לטיפול`,go:()=>nav("req")});
+ const ex=openCash().length;if(ex)a.push({l:"info",t:`יש ${ex} תנועות מזומן שטרם נסגרו בקופה`,go:()=>nav("chk")});
+ return a}
+let _al=[];
+function alHtml(list){return list.map((x,i)=>`<div class="al ${x.l==="bad"?"bad":x.l==="info"?"info":""}"><span>${he(x.t)}</span><button class="b s sm" onclick="alGo(${i})">פתח</button></div>`).join("")||'<div class="mu">אין התראות</div>'}
+function alGo(i){close();_al[i].go()}
+function showAlerts(){_al=alerts();done("התראות",alHtml(_al))}
+function gsearch(e){e.preventDefault();const q=$("#gs").value.trim();if(q.length<2)return false;
+ const A=S.stu.filter(s=>(s.n+fam(s.fam).par+fam(s.fam).tel).includes(q)),B=S.fam.filter(f=>(f.n+f.par+f.tel).includes(q)),C=S.rec.filter(r=>String(r.no)===q);
+ done("תוצאות חיפוש: "+he(q),`${A.length?`<h4>תלמידים</h4>`+A.map(s=>`<div class="chk"><button class="b s sm" onclick="stuView(${s.id})">${he(s.n)}</button> ${he(fn(s.fam))} · יתרה ${money(bal(s))}</div>`).join(""):""}${B.length?`<h4>משפחות</h4>`+B.map(f=>`<div class="chk"><button class="b s sm" onclick="famView(${f.id})">${he(f.n)}</button> ${he(f.par)} · ${he(f.tel)}</div>`).join(""):""}${C.length?`<h4>קבלות</h4>`+C.map(r=>`<div class="chk"><button class="b s sm" onclick="recView(${r.no})">קבלה ${r.no}</button> ${money(r.amt)}</div>`).join(""):""}${A.length+B.length+C.length?"":'<p class="mu">לא נמצאו תוצאות</p>'}`);return false}
+$("#gsf").onsubmit=gsearch;
+
+/* ---------- render ---------- */
+function bars(id,data,colors){const mx=Math.max(1,...data.map(d=>d[1]));
+ $(id).innerHTML=data.map((d,i)=>`<div class="col" title="${he(d[0])}: ${money(d[1])}"><span class="v">${short(d[1])}</span><div style="height:${Math.max(2,d[1]/mx*75)}%;${colors?`background:${colors[i]}`:""}"></div>${he(d[0])}</div>`).join("")}
+function rDash(al){
+ const gross=sum(S.chg.filter(c=>c.amt>0),c=>c.amt),disc=-sum(S.chg.filter(c=>c.amt<0),c=>c.amt),paid=sum(S.pay,p=>p.amt),open=gross-disc-paid,fails=sum(S.plans,p=>p.ch.filter(c=>c.st==="f").length);
+ $("#kpi").innerHTML=[[money(gross-disc),"חויב נטו"],[money(paid),"נגבה"],[money(open),"יתרה פתוחה"],[(gross-disc>0?Math.round(paid/(gross-disc)*100):0)+"%","אחוז גבייה"],[money(disc),"הנחות ומלגות"],[S.stu.filter(s=>s.st==="פעיל").length,"תלמידים פעילים"],[S.plans.filter(p=>p.on).length,"תוכניות חיוב פעילות"],[fails,"חיובים שנכשלו"]].map(k=>`<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join("");
+ const ag=S.stu.map(s=>aging(s.id)).reduce((a,b)=>a.map((x,i)=>x+b[i]),[0,0,0,0]);bars("#bAge",AGEL.map((l,i)=>[l,ag[i]]),["#1d7a46","#a86b00","#c25a1b","#b3322b"]);
+ const ms=[];for(let i=5;i>=0;i--){const d=new Date(T.getFullYear(),T.getMonth()-i,1),k=iso(d).slice(0,7);ms.push([d.toLocaleDateString("he-IL",{month:"long"}),S.pay.filter(p=>p.date.startsWith(k)).reduce((a,p)=>a+p.amt,0)])}bars("#bMon",ms);
+ const fc=[];for(let i=0;i<6;i++){const d=new Date(T.getFullYear(),T.getMonth()+i,1),k=iso(d).slice(0,7);
+  fc.push([d.toLocaleDateString("he-IL",{month:"long"}),sum(S.plans.filter(p=>p.on),p=>sum(p.ch.filter(c=>c.st==="w"&&c.d.startsWith(k)),c=>c.amt))+sum(S.chk.filter(c=>c.st==="ממתין"&&c.due.startsWith(k)),c=>c.amt)])}bars("#bFc",fc,fc.map(()=>"#2f5aa8"));
+ _al=al;$("#dAl").innerHTML=alHtml(al.slice(0,5));
+ $("#topB").innerHTML=S.fam.filter(f=>fbal(f)>0).sort((a,b)=>fbal(b)-fbal(a)).slice(0,5).map(f=>`<tr class="k" ${KB} onclick="famView(${f.id})"><td>${he(f.n)}</td><td>${money(fbal(f))}</td><td>${ageLbl(famAging(f))}</td></tr>`).join("")||'<tr><td colspan="3">אין חייבים</td></tr>';
+ $("#act").innerHTML=S.log.slice(0,6).map(l=>`<div>${l.t} · ${he(l.m)}</div>`).join("")}
+function stBadge(s){const b=bal(s);return s.st!=="פעיל"?`<span class="pill gr">${s.st}</span>`:b<=0?'<span class="pill g">שולם</span>':paidS(s)>0?'<span class="pill o">חלקי</span>':'<span class="pill r">חוב</span>'}
+function rFam(){const q=$("#q").value.trim(),c=$("#cls").value,st=$("#sst").value;
+ const L=S.stu.filter(s=>{const f=fam(s.fam),b=bal(s);return(!q||(s.n+f.par+f.tel+f.n).includes(q))&&(!c||s.c===c)&&(st==="act"?s.st==="פעיל":st==="debt"?b>0:st==="out"?s.st!=="פעיל":true)});
+ $("#stuB").innerHTML=L.map(s=>`<tr class="k" ${KB} onclick="stuView(${s.id})"><td>${he(s.n)}</td><td>${he(s.c)}</td><td>${he(fam(s.fam).par)}</td><td>${money(net(s))}</td><td>${money(paidS(s))}</td><td>${money(bal(s))}</td><td>${stBadge(s)}</td></tr>`).join("")||'<tr><td colspan="7">לא נמצאו תלמידים</td></tr>';
+ $("#famB").innerHTML=S.fam.map(f=>{const p=promiseOf(f.id),lc=lastContact(f.id);return `<tr class="k" ${KB} onclick="famView(${f.id})"><td>${he(f.n)}</td><td>${he(f.par)}</td><td>${he(f.tel)}</td><td>${kids(f.id).length}</td><td>${money(fbal(f))}</td><td>${fbal(f)>0?ageLbl(famAging(f)):"-"}</td><td>${p?money(p.pa)+" ל-"+fd(p.pd):"-"}</td><td>${lc?fd(lc):"-"}</td></tr>`}).join("")}
+function rChg(){const tf=$("#cty"),cur=tf.value;tf.innerHTML='<option value="">כל הסוגים</option>'+Object.keys(TY).map(k=>`<option value="${k}">${TY[k]}</option>`).join("");tf.value=cur;
+ $("#chgB").innerHTML=S.chg.filter(c=>!cur||c.type===cur).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,60).map(c=>`<tr><td>${fd(c.date)}</td><td>${he(sn(c.stu))}</td><td>${he(c.desc)}</td><td><span class="pill ${c.amt<0?"g":"bl"}">${TY[c.type]||c.type}</span></td><td>${money(c.amt)}</td><td>${has("charges")?`<button class="b s sm" onclick="delChg(${c.id})">מחיקה</button>`:""}</td></tr>`).join("")||'<tr><td colspan="6">אין חיובים</td></tr>';
+ $("#catB").innerHTML=S.cat.map((c,i)=>`<tr><td>${he(c.n)}</td><td>${money(c.amt)}</td><td>${TY[c.type]}</td><td><button class="b s sm" onclick="delCat(${i})">מחיקה</button></td></tr>`).join("")}
+function rPlan(){$("#tdy").textContent="תאריך הדגמה: "+fd(today())+" · חיובים שהגיע מועדם: "+due();
+ $("#planB").innerHTML=S.plans.map(p=>{const nx=nextCh(p),st=planSt(p);return `<tr class="k" ${KB} onclick="planView(${p.id})"><td>${he(sn(p.stu))}</td><td>${planLbl(p)}</td><td>${money(p.amt)}${p.type==="inst"?" סה״כ":" לחודש"}</td><td>${p.ch.filter(c=>c.st==="p").length}${p.count||p.type==="inst"?" מתוך "+p.ch.length:""}</td><td>${mLbl[p.method]}</td><td>${nx?fd(nx.d)+" · "+money(nx.amt):"-"}</td><td><span class="pill ${st[1]}">${st[0]}</span></td></tr>`}).join("")||'<tr><td colspan="7">אין תוכניות חיוב</td></tr>'}
+function rCard(){$("#cardB").innerHTML=S.cards.map(k=>`<tr><td>${he(sn(k.stu))}</td><td>${he(k.br)} ****${k.l4}${k.def?' <span class="pill g">ברירת מחדל</span>':""}</td><td>${k.e}${expired(k.e)?' <span class="pill r">פג תוקף</span>':""}</td><td>${he(k.h)}</td><td>${S.plans.filter(p=>p.tk===k.id).length}</td><td><button class="b s sm" onclick="setDef(${k.id})">ברירת מחדל</button> <button class="b s sm" onclick="delCard(${k.id})">הסר</button></td></tr>`).join("")||'<tr><td colspan="6">אין כרטיסים שמורים</td></tr>'}
+function rChk(){const stp={"ממתין":"o","הופקד":"g","חזר":"r","בוטל":"gr"};
+ $("#chkB").innerHTML=S.chk.slice().sort((a,b)=>a.due.localeCompare(b.due)).map(c=>`<tr><td>${fd(c.due)}${c.st==="ממתין"&&c.due<=today()?' <span class="pill o">הגיע מועד</span>':""}</td><td>${he(sn(c.stu))}</td><td>${he(c.no)}</td><td>${he(c.b)}</td><td>${money(c.amt)}</td><td><span class="pill ${stp[c.st]}">${c.st}</span></td><td>${c.st==="ממתין"?`<button class="b sm" onclick="depositChk(${c.id})">הפקדה</button> <button class="b s sm" onclick="cancelChk(${c.id})">ביטול</button>`:c.st==="הופקד"?`<button class="b s sm" onclick="returnChk(${c.id})">סמן כחוזר</button>`:""}</td></tr>`).join("")||'<tr><td colspan="7">אין שיקים</td></tr>';
+ $("#cashExp").textContent=money(sum(openCash(),p=>p.amt));$("#cashN").textContent=openCash().length;
+ $("#closeB").innerHTML=S.close.map(c=>`<tr><td>${fd(c.date)}</td><td>${c.t}</td><td>${he(c.by)}</td><td>${money(c.exp)}</td><td>${money(c.cnt)}</td><td class="${c.diff?"bad":"ok"}">${money(c.diff)}</td><td>${he(c.n)}</td></tr>`).join("")||'<tr><td colspan="7">אין סגירות</td></tr>'}
+function rBank(){$("#bankB").innerHTML=S.bank.map((b,i)=>`<tr><td>${fd(b.d)}</td><td>${he(b.desc)}</td><td>${money(b.amt)}</td><td>${b.st==="ok"?'<span class="pill g">נרשם</span>':b.m?he(fn(b.m)):'<span class="pill o">לא זוהה</span>'}</td><td>${b.st==="ok"?"":`<button class="b sm" onclick="bankOk(${i})">${b.m?"אישור":"שיוך"}</button>`}</td></tr>`).join("")||'<tr><td colspan="5">אין תנועות. ייבא דף בנק.</td></tr>';
+ $("#soB").innerHTML=sos().map(p=>`<tr><td>${he(sn(p.stu))}</td><td>${money(nextCh(p).amt)}</td><td>${he(p.bank.b)} / ${he(p.bank.ac)}</td><td>${fd(nextCh(p).d)}</td></tr>`).join("")||'<tr><td colspan="4">אין הוראות קבע</td></tr>'}
+function rRec(){$("#recB").innerHTML=S.rec.map(r=>`<tr><td>${r.no}</td><td>${fd(r.date)}</td><td>${he(r.name)}</td><td>${money(r.amt)}</td><td>${r.credit?'<span class="pill o">זיכוי</span>':r.refund?'<span class="pill o">החזר</span>':r.cancelled?'<span class="pill r">מבוטלת</span>':'<span class="pill g">קבלה</span>'}</td><td>${r.sent?"כן":"לא"}</td><td><button class="b s sm" onclick="recView(${r.no})">צפייה והדפסה</button></td></tr>`).join("")}
+function rMsg(){const mn=+$("#dfAge").value,mi=+$("#dfMin").value||0;
+ $("#debtB").innerHTML=S.fam.filter(f=>{const b=fbal(f);if(b<=mi)return false;const a=famAging(f);return !mn||(mn===30?a.slice(1):mn===60?a.slice(2):a.slice(3)).some(x=>x>0.5)}).sort((a,b)=>fbal(b)-fbal(a)).map(f=>{const p=promiseOf(f.id),lc=lastContact(f.id);return `<tr><td><a href="#" onclick="famView(${f.id});return false">${he(f.n)}</a></td><td>${money(fbal(f))}</td><td>${ageLbl(famAging(f))}</td><td>${lc?fd(lc)+" ("+days(lc,today())+" ימים)":'<span class="bad">לא נוצר קשר</span>'}</td><td>${p?(p.pd<today()?'<span class="pill r">עברה</span> ':"")+money(p.pa)+" ל-"+fd(p.pd):"-"}</td><td><button class="b s sm" onclick="addNote(${f.id})">הערה</button> <button class="b s sm" onclick="statement(${f.id})">דף חשבון</button></td></tr>`}).join("")||'<tr><td colspan="6">אין חייבים לפי הסינון</td></tr>';
+ $("#rulesB").innerHTML=S.rules.map(r=>`<div class="rule"><div class="row" style="margin:0"><b>${he(r.n)}</b><span class="pill ${r.on?"g":"gr"}">${r.on?"פעילה":"כבויה"}</span><span class="mu">ערוץ: ${r.ch}</span><span style="margin-inline-start:auto"></span><button class="b s sm" onclick="ruleTest(${r.id})">בדיקה</button><button class="b s sm" onclick="ruleEdit(${r.id})">עריכה</button></div><div class="mu">${he(r.txt)}</div></div>`).join("");
+ $("#msgB").innerHTML=S.msgs.map(m=>`<tr><td>${m.t}</td><td>${m.ch}</td><td>${m.n}</td><td>${he(m.txt||"")}</td><td>${m.auto?"אוטומטי":"ידני"}</td></tr>`).join("")||'<tr><td colspan="5">עדיין לא נשלחו הודעות</td></tr>'}
+function rReq(){const sp={"ממתין":"o","אושרה":"g","נדחתה":"r"};
+ $("#reqB").innerHTML=S.req.map(r=>`<tr><td>${fd(r.date)}</td><td>${he(fn(r.fam))}</td><td>${he(sn(r.stu))}</td><td>${r.type}</td><td>${he(reqDet(r))}${r.note?`<div class="mu">${he(r.note)}</div>`:""}${r.reason?`<div class="mu">סיבת דחייה: ${he(r.reason)}</div>`:""}</td><td><span class="pill ${sp[r.st]}">${r.st}</span></td><td>${r.st==="ממתין"?`<button class="b sm" onclick="reqApprove(${r.id})">אישור</button> <button class="b s sm" onclick="reqReject(${r.id})">דחייה</button>`:""}</td></tr>`).join("")||'<tr><td colspan="7">אין בקשות</td></tr>'}
+function rPortal(){const ps=$("#pf"),cur=ps.value;ps.innerHTML=S.fam.filter(f=>kids(f.id).length).map(f=>`<option value="${f.id}">${he(f.n)} - ${he(f.par)}</option>`).join("");if(cur&&S.fam.some(f=>f.id==cur&&kids(f.id).length))ps.value=cur;
+ const f=fam(+ps.value);if(!f){$("#portalOut").innerHTML="";return}const b=fbal(f),ids=kids(f.id).map(s=>s.id),L=ledger(ids).slice(-6).reverse(),rs=S.rec.filter(r=>r.fam===f.id&&r.amt>0&&!r.cancelled).slice(0,4);
+ $("#portalOut").innerHTML=`<div class="phone"><div class="ph-h">${he(S.cfg.school)}<br><small>פורטל הורים</small></div><div class="ph-b"><p>שלום ${he(f.par)}</p>
+ <div class="bigbal"><span>${b>0?"יתרה לתשלום":b<0?"יתרת זכות":"אין יתרה לתשלום"}</span><b class="${b>0?"bad":"ok"}">${money(Math.abs(b))}</b></div>
+ ${kids(f.id).map(s=>`<div class="pk"><span>${he(s.n)} · ${he(s.c)}</span><b>${money(bal(s))}</b></div>`).join("")}
+ <div class="pbtn"><button class="b" onclick="portalPay(${f.id})" ${b>0?"":"disabled"}>שלם עכשיו</button><button class="b s" onclick="portalPlan(${f.id})">בקשת פריסה</button><button class="b s" onclick="portalDisc(${f.id})">בקשת הנחה</button><button class="b s" onclick="portalInfo(${f.id})">עדכון פרטי קשר</button></div>
+ <h4>תנועות אחרונות</h4>${L.map(r=>`<div class="pk"><span>${fd(r.d)} · ${he(r.t)}</span><b>${r.dr?money(r.dr):"-"+money(r.cr)}</b></div>`).join("")||'<div class="mu">אין תנועות</div>'}
+ <h4>קבלות</h4>${rs.map(r=>`<div class="pk"><span>קבלה ${r.no} · ${fd(r.date)}</span><button class="b s sm" onclick="recView(${r.no})">צפייה</button></div>`).join("")||'<div class="mu">אין קבלות</div>'}</div></div>`}
+function rUsers(){$("#usrB").innerHTML=S.users.map((u,i)=>`<tr class="k" ${KB} onclick="editUsr(${i})"><td>${he(u.n)}${i===S.cur?" (אתה)":""}</td><td>${he(u.e)}</td><td>${he(u.r)}</td><td>${u.p.length} מתוך ${ALL.length}</td><td><span class="pill ${u.on?"g":"r"}">${u.on?"פעיל":"מושבת"}</span></td></tr>`).join("");
+ $("#matrix").innerHTML=`<tr><th>הרשאה</th>${Object.keys(ROLES).map(r=>`<th>${r}</th>`).join("")}</tr>`+ALL.map(k=>`<tr><td>${PERMS[k]}</td>${Object.values(ROLES).map(r=>`<td>${r.includes(k)?"✓":""}</td>`).join("")}</tr>`).join("");
+ const q=$("#lf").value.trim();$("#logB").innerHTML=S.log.filter(l=>!q||l.m.includes(q)).slice(0,40).map(l=>`<div>${l.t} · ${he(l.m)}</div>`).join("")}
+function rCfg(){const c=S.cfg;
+ $("#genT").innerHTML=[["שם בית הספר",c.school],["שנת לימודים פעילה",c.yr],["הנחת אחים",`ילד שני ${c.sib[1]}% · ילד שלישי ואילך ${c.sib[2]}%`],["עמלת שיק חוזר",money(c.chkFee)],["הרצת חיובים אוטומטית",c.runAt],["גיבוי אוטומטי",c.backup]].map(r=>`<tr><th>${r[0]}</th><td>${he(r[1])}</td></tr>`).join("");
+ $("#intB").innerHTML=S.integ.map((x,i)=>`<tr><td>${he(x.n)}</td><td><span class="pill ${x.on?"g":"gr"}">${x.on?"מחובר":"לא מחובר"}</span></td><td>${he(x.det)}</td><td><button class="b s sm" onclick="testInteg(${i})">בדיקת חיבור</button> <button class="b s sm" onclick="editInteg(${i})">${x.on?"ניתוק":"הגדרה"}</button></td></tr>`).join("");
+ $("#secT").innerHTML=[["אימות דו-שלבי חובה",c.twofa?"פעיל":"כבוי","twofa"],["ניתוק אוטומטי אחרי חוסר פעילות",c.timeout+" דקות",""],["אורך סיסמה מינימלי",c.minpw+" תווים",""],["נעילה אחרי ניסיונות כושלים",c.lock+" ניסיונות",""]].map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td><td>${r[2]?`<button class="b s sm" onclick="toggleSec('${r[2]}')">שינוי</button>`:""}</td></tr>`).join("");
+ $("#yrInfo").innerHTML=`שנה פעילה: <b>${he(c.yr)}</b> · תלמידים פעילים: ${S.stu.filter(s=>s.st==="פעיל").length} · בוגרים: ${S.stu.filter(s=>s.st==="סיים").length}`}
+function R(){
+ $("#who").innerHTML=S.users.map((u,i)=>u.on||i===S.cur?`<option value="${i}" ${i===S.cur?"selected":""}>${he(u.n)} - ${he(u.r)}</option>`:"").join("");
+ $("#schoolN").textContent=S.cfg.school+" · "+S.cfg.yr;$("#dt").textContent=dow(T)+" · "+heD(T)+" · "+fd(today());
+ const al=alerts();$("#bn").textContent=al.length;
+ rDash(al);rFam();rChg();rPlan();rCard();rChk();rBank();rRec();rMsg();rReq();rPortal();rUsers();rCfg();applyNav()}
+
+/* ---------- sample data ---------- */
+const rel=n=>addDays(today(),-n);
+const yS=iso(new Date(D.getMonth()>=8?D.getFullYear():D.getFullYear()-1,8,1));
+[["כהן","דוד כהן","050-1111111","cohen@example.com","רחוב הרצל 10, תל אביב"],["לוי","משה לוי","052-2222222","levi@example.com","רחוב ויצמן 4, בני ברק"],["פרידמן","שמעון פרידמן","054-3333333","friedman@example.com","רחוב רש״י 21, ירושלים"],["גולד","יעקב גולד","050-4444444","gold@example.com","רחוב הנביאים 8, חיפה"],["רוזן","נחמן רוזן","053-5555555","rosen@example.com","רחוב העצמאות 3, אשדוד"],["שפירא","אריה שפירא","058-6666666","shapira@example.com","רחוב הגפן 15, פתח תקווה"]]
+ .forEach(a=>S.fam.push({id:S.fid++,n:"משפחת "+a[0],par:a[1],tel:a[2],em:a[3],addr:a[4],note:""}));
+[["יוסף כהן","ג'",1],["אפרים כהן","א'",1],["אברהם לוי","ה'",2],["מנחם פרידמן","ב'",3],["שמואל גולד","ד'",4],["אליהו רוזן","א'",5],["דניאל שפירא","ו'",6],["חיים שפירא","ד'",6],["נתנאל שפירא","א'",6]]
+ .forEach(a=>{const s={id:S.sid++,n:a[0],c:a[1],fam:a[2],st:"פעיל"};S.stu.push(s);addCharge(s.id,"שכר לימוד "+S.cfg.yr,9600,"tuition",yS)});
+S.fam.forEach(f=>recalcSib(f.id));
+addCharge(4,"יתרה משנה קודמת",1500,"carry",addDays(yS,-60),"תשפ״ו");
+[3,5,7,8].forEach(i=>addCharge(i,"טיול שנתי",120,"trip",rel(14)));
+[[1,9600,"אשראי",35],[2,4000,"העברה",20],[3,2400,"העברה",30],[3,2400,"העברה",3],[4,900,"מזומן",2],[5,4800,"אשראי",25],[6,1200,"שיק",33],[7,3200,"העברה",10],[8,8640,"אשראי",40]].forEach(a=>addPay(a[0],a[1],a[2],rel(a[3]),"דוגמה"));
+[[1,"4111111111111111","09/29","דוד כהן"],[4,"4242424242424242","12/29","שמעון פרידמן"],[7,"5555555555550002","01/26","אריה שפירא"],[5,"5105105105105100","05/28","יעקב גולד"],[9,"4000056655665556","02/27","אריה שפירא"]].forEach(a=>addTok(a[0],{c:a[1],e:a[2],h:a[3]}));
+const m0=iso(new Date(T.getFullYear(),T.getMonth(),1));
+const sp=(stuId,type,amt,n,start,method,tk,bank)=>{const p={id:S.plid++,stu:stuId,type,amt,count:n,method,on:true,tk,bank,ch:mk(type,amt,n,start)};S.plans.push(p);p.ch.forEach((c,i)=>{if(c.d<m0)chargeOne(p,i)})};
+sp(4,"inst",6000,6,iso(new Date(T.getFullYear(),T.getMonth()-2,5)),"כרטיס",S.cards.find(c=>c.stu===4).id,null);
+sp(7,"rec",800,0,iso(new Date(T.getFullYear(),T.getMonth()-1,8)),"כרטיס",S.cards.find(c=>c.stu===7).id,null);
+sp(3,"rec",1200,4,iso(new Date(T.getFullYear(),T.getMonth()+1,10)),"הוראת קבע",null,{b:"לאומי",br:"800",ac:"123456"});
+S.chk.push({id:S.ckid++,stu:6,no:"123456",b:"פועלים 612",amt:1200,due:addDays(today(),5),st:"ממתין"});
+S.chk.push({id:S.ckid++,stu:6,no:"123457",b:"פועלים 612",amt:1200,due:addDays(today(),35),st:"ממתין"});
+S.chk.push({id:S.ckid++,stu:2,no:"778812",b:"לאומי 905",amt:1000,due:addDays(today(),-2),st:"ממתין"});
+{const id=S.ckid++;S.chk.push({id:id,stu:8,no:"550021",b:"דיסקונט 040",amt:500,due:rel(15),st:"ממתין"});depositChk(id,true,rel(15));returnChk(id,true,rel(8))}
+S.col.push({id:S.colid++,fam:3,d:rel(20),by:"מזכירות",t:"הבטחת תשלום",n:"ביקשו לדחות לאחר החג",pd:addDays(today(),5),pa:2000,done:false});
+S.col.push({id:S.colid++,fam:2,d:rel(12),by:"מזכירות",t:"הודעה",n:"נשלחה תזכורת בוואטסאפ",pd:"",pa:0,done:false});
+S.req.push({id:S.rqid++,date:rel(2),fam:2,stu:3,type:"פריסה",det:{months:6,method:"כרטיס"},note:"נבקש לפרוס את היתרה",st:"ממתין"});
+S.req.push({id:S.rqid++,date:rel(1),fam:5,stu:6,type:"הנחה",det:{pct:15},note:"פגיעה בפרנסה בעקבות סגירת העסק",st:"ממתין"});
+S.req.push({id:S.rqid++,date:rel(1),fam:3,stu:4,type:"עדכון פרטים",det:{tel:"052-9998877",em:""},note:"",st:"ממתין"});
+S.close.push({id:1,date:rel(1),t:"16:05",by:"קופאית",exp:2300,cnt:2300,diff:0,n:""});
+S.msgs.push({t:"09:10",ch:"SMS",n:12,txt:"תזכורת חיוב חודשי"});
+S.rec.forEach(r=>r.sent=true);seeding=false;log("המערכת נטענה");
+
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{$$("nav button,.panel").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("#"+b.dataset.p).classList.add("on")});
+document.addEventListener("click",e=>{const b=e.target.closest(".tabs button");if(b)tab(b.parentNode.dataset.g,b.dataset.t)});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+R();
+</script>
+</body>
+</html>
