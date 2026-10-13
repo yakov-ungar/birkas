@@ -1,0 +1,135 @@
+// Portable schema: no database enums and no provider-specific types, so switching to
+// PostgreSQL only requires changing `provider` below. Allowed values for string
+// "enum" columns are enforced with Zod (packages/shared).
+// Money columns (from stage 2 on) are Int in agorot.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Key/value settings. `value` is JSON. Defaults live in packages/shared (DEFAULT_SETTINGS).
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  passwordHash     String?
+  role             String
+  /// JSON array of permission keys.
+  permissions      String
+  active           Boolean   @default(true)
+  /// AES-256-GCM encrypted TOTP secret.
+  totpSecretEnc    String?
+  totpEnabledAt    DateTime?
+  /// Last accepted TOTP time step, to block replay of the same code.
+  totpLastStep     Int?
+  failedLogins     Int       @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  sessions      Session[]
+  invites       UserInvite[]
+  recoveryCodes RecoveryCode[]
+}
+
+model UserInvite {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model RecoveryCode {
+  id       String    @id @default(cuid())
+  userId   String
+  codeHash String
+  usedAt   DateTime?
+  user     User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Session {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  userId     String
+  /// pending_2fa | setup_2fa | full
+  stage      String
+  csrfToken  String
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+/// Append-only (enforced by triggers in the init migration).
+model LoginEvent {
+  id        String   @id @default(cuid())
+  at        DateTime
+  userId    String?
+  /// success | fail | locked | 2fa_ok | 2fa_fail | logout | timeout
+  event     String
+  ip        String?
+  userAgent String?
+
+  @@index([at])
+}
+
+/// Append-only audit trail with a hash chain (enforced by triggers in the init migration).
+model AuditLog {
+  id        String   @id @default(cuid())
+  seq       Int      @unique
+  at        DateTime
+  /// user | parent | system
+  actorType String
+  actorId   String?
+  actorName String
+  action    String
+  /// Human-readable Hebrew line shown in the audit screen (as in the demo log).
+  summary   String
+  entity    String
+  entityId  String?
+  /// JSON snapshots; never contain card data or secrets.
+  before    String?
+  after     String?
+  ip        String?
+  prevHash  String
+  hash      String
+
+  @@index([at])
+  @@index([entity, entityId])
+}
+
+/// Outgoing email. In dev/test nothing is sent; messages stay here.
+model Outbox {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  to        String
+  subject   String
+  text      String
+  html      String?
+  sentAt    DateTime?
+  error     String?
+}

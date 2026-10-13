@@ -1,0 +1,9 @@
+docs/reference
+pnpm-lock.yaml
+**/dist
+**/migrations
+docs/**/*.md
+**/test-results
+**/playwright-report
+**/.tmp
+**/.tmp-e2e

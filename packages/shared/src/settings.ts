@@ -1,0 +1,37 @@
+import { z } from 'zod';
+
+export const securitySettingsSchema = z.object({
+  require2fa: z.boolean(),
+  idleTimeoutMin: z.number().int().min(5).max(480),
+  minPasswordLength: z.number().int().min(8).max(64),
+  maxFailedLogins: z.number().int().min(3).max(20),
+});
+export type SecuritySettings = z.infer<typeof securitySettingsSchema>;
+
+export const generalSettingsSchema = z.object({
+  schoolName: z.string().trim().min(1).max(120),
+  activeYearName: z.string().trim().min(1).max(20),
+  siblingPct: z.tuple([z.literal(0), z.number().int().min(0).max(100), z.number().int().min(0).max(100)]),
+  checkReturnFeeAgorot: z.number().int().min(0),
+  autoRunTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  backupFrequency: z.enum(['daily', 'weekly']),
+});
+export type GeneralSettings = z.infer<typeof generalSettingsSchema>;
+
+export type AllSettings = SecuritySettings & GeneralSettings;
+
+/** Defaults taken from the demo's S.cfg. */
+export const DEFAULT_SETTINGS: AllSettings = {
+  schoolName: 'בית ספר לדוגמה',
+  activeYearName: 'תשפ״ז',
+  siblingPct: [0, 10, 20],
+  checkReturnFeeAgorot: 3000,
+  autoRunTime: '02:00',
+  backupFrequency: 'daily',
+  require2fa: true,
+  idleTimeoutMin: 30,
+  minPasswordLength: 10,
+  maxFailedLogins: 5,
+};
+
+export const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof AllSettings)[];
