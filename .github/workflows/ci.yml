@@ -32,3 +32,27 @@ jobs:
           name: playwright-traces
           path: apps/web/test-results
           retention-days: 7
+
+  release:
+    # Decision D3: CI builds the deployment archive (the 1 GB server does not build).
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: sudo apt-get update && sudo apt-get install -y age shellcheck
+      - run: shellcheck -x deploy/scripts/*.sh deploy/test/*.sh
+      - name: Dependency audit (fails on high or critical in production dependencies)
+        run: pnpm audit --prod --audit-level high
+      - name: Release archive, backup, restore and integrity round trip
+        run: VERSION="${GITHUB_SHA::12}" deploy/test/release-roundtrip.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release/*.tar.gz*
+          retention-days: 30

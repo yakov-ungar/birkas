@@ -11,3 +11,4 @@ playwright-report/
 test-results/
 apps/server/test/.tmp/
 apps/server/test/.tmp-e2e/
+release/

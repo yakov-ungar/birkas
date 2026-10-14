@@ -1,0 +1,15 @@
+# /etc/systemd/system/tuition-health.service
+[Unit]
+Description=Tuition billing system: health check and alert
+
+[Service]
+Type=oneshot
+User=tuition
+Group=tuition
+EnvironmentFile=/etc/tuition/backup.env
+ExecStart=/opt/tuition/current/deploy/scripts/healthcheck.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/tuition

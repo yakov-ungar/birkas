@@ -12,6 +12,7 @@ import { TestClock } from '../src/lib/clock';
 import { createDb } from '../src/lib/db';
 import { createDeps, type Deps } from '../src/deps';
 import { hashPassword } from '../src/lib/passwords';
+import { checkIntegrity } from '../src/ops/integrity';
 
 export type TestDeps = Deps & { clock: TestClock };
 
@@ -20,6 +21,8 @@ export interface TestCtx {
   deps: TestDeps;
   logs: string[];
   close(): Promise<void>;
+  /** For a test that breaks the data on purpose. */
+  skipIntegrity?: boolean;
 }
 
 export async function makeApp(env: Partial<Record<keyof Config, string>> = {}): Promise<TestCtx> {
@@ -48,16 +51,21 @@ export async function makeApp(env: Partial<Record<keyof Config, string>> = {}): 
   });
   const app = await buildApp(deps, { logStream });
   await app.ready();
-  return {
+  const ctx: TestCtx = {
     app,
     deps,
     logs,
     async close() {
+      // Whatever a test did through the API, the books must still be consistent.
+      const integrity = await checkIntegrity(db);
+      if (!ctx.skipIntegrity && !integrity.ok)
+        throw new Error(`integrity: ${JSON.stringify(integrity.checks.filter((c) => !c.ok))}`);
       await app.close();
       await db.$disconnect();
       for (const f of [file, `${file}-wal`, `${file}-shm`]) rmSync(f, { force: true });
     },
   };
+  return ctx;
 }
 
 let seq = 0;

@@ -1,0 +1,13 @@
+# /etc/systemd/system/tuition-backup.timer
+# Daily at 03:30 Israel time (after the nightly charges at 02:00). For a weekly backup
+# (setting "תדירות גיבוי"), change OnCalendar to: Sun *-*-* 03:30:00 Asia/Jerusalem
+[Unit]
+Description=Daily encrypted backup of the tuition database
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Jerusalem
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

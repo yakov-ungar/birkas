@@ -31,11 +31,18 @@ pnpm test     # Vitest: יחידה ואינטגרציה, כל קובץ על מס
 pnpm e2e      # Playwright: בונה את האתר ומריץ שרת בדיקה על מסד נקי
 ```
 
+בדיקת ארכיון הגרסה והגיבויים (דורשת `age`): `deploy/test/release-roundtrip.sh`
+
+## התקנה בשרת
+
+ההוראות צעד אחר צעד נמצאות ב-[docs/DEPLOY.md](docs/DEPLOY.md), ורשימת בדיקות האבטחה ב-[docs/SECURITY.md](docs/SECURITY.md).
+
 ## מבנה
 
 ```
 apps/server     Fastify + Prisma (SQLite, WAL)
 apps/web        React + Vite
 packages/shared הרשאות, תפקידים, סכמות Zod וטיפוסים משותפים
+deploy/         systemd, Nginx, סקריפטים לגיבוי, שחזור, בדיקת תקינות והתקנת גרסה
 docs/           תוכנית, שאלות, סיכומי שלבים, ההדגמה
 ```

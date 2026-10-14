@@ -113,6 +113,14 @@ export async function receiptView(db: Db | Tx, id: string): Promise<ReceiptView>
 }
 
 const fmtDate = (d: string) => d.split('-').reverse().join('/');
+const hebrewFmt = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'Asia/Jerusalem',
+});
+/** Decision D5: the Hebrew date next to the Gregorian one. A business date is taken at noon UTC (same day in Israel). */
+export const hebrewDateOf = (d: string) => hebrewFmt.format(new Date(`${d}T12:00:00Z`));
 
 export async function renderDocumentPdf(v: ReceiptView, mark: 'מקור' | 'העתק נאמן למקור'): Promise<Buffer> {
   const title = `${DOC_TYPES[v.docType]} מס׳ ${v.number}`;
@@ -122,7 +130,7 @@ export async function renderDocumentPdf(v: ReceiptView, mark: 'מקור' | 'הע
   pdf.text(title, { size: 14, bold: true, gap: 0.6 });
   pdf.rule();
   const isCredit = v.docType !== 'receipt';
-  pdf.text(`תאריך: ${fmtDate(v.date)}`);
+  pdf.text(`תאריך: ${fmtDate(v.date)} (${hebrewDateOf(v.date)})`);
   pdf.text(`${isCredit ? 'הוחזר ל' : 'התקבל מאת'}: ${v.payerName}`);
   pdf.text(`אמצעי: ${PAYMENT_METHODS[v.method] ?? v.method}${v.reference ? ` · ${v.reference}` : ''}`);
   if (v.creditForNumber) pdf.text(`זיכוי לקבלה מס׳ ${v.creditForNumber}`);

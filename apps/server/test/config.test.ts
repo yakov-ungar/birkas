@@ -16,7 +16,9 @@ describe('config', () => {
   });
 
   it('defaults to secure cookies in production only', () => {
-    expect(loadConfig({ ...base, NODE_ENV: 'production' }).COOKIE_SECURE).toBe(true);
+    expect(
+      loadConfig({ ...base, NODE_ENV: 'production', APP_BASE_URL: 'https://school.example' }).COOKIE_SECURE,
+    ).toBe(true);
     expect(loadConfig({ ...base, NODE_ENV: 'development' }).COOKIE_SECURE).toBe(false);
   });
 });

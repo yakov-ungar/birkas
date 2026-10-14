@@ -192,8 +192,7 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
       index: false,
       setHeaders: (res, path) => {
         // Vite emits content-hashed files under /assets.
-        if (/[/\\]assets[/\\]/.test(path))
-          res.setHeader('cache-control', 'public, max-age=31536000, immutable');
+        if (/[/\\]assets[/\\]/.test(path)) res.header('cache-control', 'public, max-age=31536000, immutable');
       },
     });
   }

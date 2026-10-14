@@ -1,0 +1,10 @@
+# /etc/systemd/system/tuition-health.timer
+[Unit]
+Description=Check the tuition server every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

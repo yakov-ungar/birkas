@@ -1,0 +1,18 @@
+# /etc/systemd/system/tuition-backup.service
+[Unit]
+Description=Tuition billing system: encrypted database backup
+After=tuition.service
+
+[Service]
+Type=oneshot
+User=tuition
+Group=tuition
+EnvironmentFile=/etc/tuition/backup.env
+ExecStart=/opt/tuition/current/deploy/scripts/backup.sh
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+UMask=0077
+ReadWritePaths=/var/lib/tuition /var/backups/tuition

@@ -46,6 +46,7 @@ describe('audit log', () => {
   });
 
   it('detects a tampered row (simulated by dropping the trigger)', async () => {
+    ctx.skipIntegrity = true;
     await add(3);
     await ctx.deps.db.$executeRawUnsafe('DROP TRIGGER AuditLog_no_update');
     await ctx.deps.db.$executeRawUnsafe(`UPDATE AuditLog SET summary = 'זויף' WHERE seq = 2`);

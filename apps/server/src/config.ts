@@ -37,6 +37,12 @@ const envSchema = z
     if (v.NODE_ENV === 'production' && v.ENABLE_TEST_ROUTES) {
       ctx.addIssue({ code: 'custom', message: 'ENABLE_TEST_ROUTES must not be enabled in production' });
     }
+    if (v.NODE_ENV === 'production' && v.COOKIE_SECURE === false) {
+      ctx.addIssue({ code: 'custom', message: 'COOKIE_SECURE must not be false in production' });
+    }
+    if (v.NODE_ENV === 'production' && !v.APP_BASE_URL.startsWith('https://')) {
+      ctx.addIssue({ code: 'custom', message: 'APP_BASE_URL must use https in production' });
+    }
     if (v.MAIL_TRANSPORT === 'smtp' && !v.SMTP_URL) {
       ctx.addIssue({ code: 'custom', message: 'SMTP_URL is required when MAIL_TRANSPORT=smtp' });
     }

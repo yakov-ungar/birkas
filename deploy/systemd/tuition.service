@@ -1,0 +1,44 @@
+# /etc/systemd/system/tuition.service
+# The application server. Listens on 127.0.0.1 only; Nginx is the only way in from outside.
+[Unit]
+Description=Tuition billing system (server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tuition
+Group=tuition
+WorkingDirectory=/opt/tuition/current
+EnvironmentFile=/etc/tuition/tuition.env
+ExecStart=/usr/bin/node /opt/tuition/current/dist/main.js
+Restart=always
+RestartSec=5
+# The 1 GB machine: leave room for Nginx and the OS.
+MemoryMax=600M
+# Logs go to journald (no personal data is logged; see docs/SECURITY.md).
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tuition
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictNamespaces=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+ReadWritePaths=/var/lib/tuition
+
+[Install]
+WantedBy=multi-user.target
