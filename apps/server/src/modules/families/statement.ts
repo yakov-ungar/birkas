@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { emailSchema, formatMoney, type LedgerRow } from '@tuition/shared';
+import { formatMoney, statementSendSchema, type LedgerRow } from '@tuition/shared';
 import { staff } from '../../plugins/access';
 import { actorOf } from '../../plugins/auth';
-import { notFound, parse } from '../../lib/errors';
+import { badRequest, notFound, parse } from '../../lib/errors';
+import { dispatch, enqueue, familyVars, newBatch } from '../messages/service';
+import { fillTemplate } from '../../domain/templates';
 import { RtlPdf } from '../../lib/pdf';
 import { recordAudit } from '../audit/service';
 import { getSettings } from '../settings/service';
@@ -95,15 +97,37 @@ export async function statementRoutes(app: FastifyInstance) {
 
   app.post('/api/families/:id/statement/send', { config: { access: staff('stu_view') } }, async (req) => {
     const { id } = parse(idParam, req.params);
-    const { email } = parse(emailSchema, req.body);
+    const input = parse(statementSendSchema, req.body);
+    const channel = input.channel ?? 'email';
     const s = await familyStatement(db, id, todayOf(deps));
-    const pdf = await statementPdf(s);
-    await deps.mailer.send({
-      to: email,
-      subject: `דף חשבון - ${s.schoolName}`,
-      text: `שלום ${s.family.parentName},\n\nמצורף דף החשבון נכון ל-${fmtDate(s.asOf)}. יתרה לתשלום: ${formatMoney(s.balanceAgorot, { fixed: true })}.\n\n${s.schoolName}`,
-      attachments: [{ filename: 'statement.pdf', content: pdf, contentType: 'application/pdf' }],
-    });
+    if (channel === 'email') {
+      const pdf = await statementPdf(s);
+      await deps.mailer.send({
+        to: input.email!,
+        subject: `דף חשבון - ${s.schoolName}`,
+        text: `שלום ${s.family.parentName},\n\nמצורף דף החשבון נכון ל-${fmtDate(s.asOf)}. יתרה לתשלום: ${formatMoney(s.balanceAgorot, { fixed: true })}.\n\n${s.schoolName}`,
+        attachments: [{ filename: 'statement.pdf', content: pdf, contentType: 'application/pdf' }],
+      });
+    } else {
+      // SMS / WhatsApp: a short text with the balance and the portal link (no attachment).
+      const template = `שלום {הורה}, דף חשבון נכון ל-${fmtDate(s.asOf)}: יתרה לתשלום {יתרה}. לצפייה ותשלום: {קישור}`;
+      const batch = await newBatch(db, {
+        channel,
+        source: 'manual',
+        template,
+        createdByName: req.auth!.user.name,
+        recipientCount: 1,
+      });
+      const m = await enqueue(deps, db, {
+        familyId: id,
+        channel,
+        body: fillTemplate(template, await familyVars(deps, db, id)),
+        batchId: batch.id,
+      });
+      await dispatch(deps, req.log);
+      const sent = m && (await db.message.findUnique({ where: { id: m.id } }));
+      if (!sent || sent.status === 'failed') throw badRequest(sent?.error ?? 'השליחה נכשלה');
+    }
     await db.$transaction((tx) =>
       recordAudit(tx, actorOf(req), clock.now(), {
         action: 'statement.send',

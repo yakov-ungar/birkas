@@ -122,7 +122,8 @@ export class Agent {
       },
     });
     for (const c of res.cookies) {
-      if (c.value === '' || (c.expires && c.expires.getTime() < Date.now())) this.cookies.delete(c.name);
+      // The server enforces expiry (against its own, possibly test-shifted, clock); drop only cleared cookies.
+      if (c.value === '') this.cookies.delete(c.name);
       else this.cookies.set(c.name, c.value);
     }
     return res;

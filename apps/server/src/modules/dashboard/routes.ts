@@ -5,6 +5,7 @@ import { todayOf, hasPerm } from '../finance/context';
 import { EMPTY, loadMoney, summarize } from '../finance/money';
 import { addAging, agingLabel, reversalSets, type AgingBuckets } from '../../domain/ledger';
 import { daysLeft } from '../cards/service';
+import { promiseInfo } from '../messages/collection';
 import type { Deps } from '../../deps';
 
 const addDays = (d: string, n: number) => new Date(Date.parse(d) + n * 86_400_000).toISOString().slice(0, 10);
@@ -86,6 +87,18 @@ export async function alertsFor(deps: Deps, req: FastifyRequest): Promise<AlertI
     if (n) out.push({ level: 'info', text: `יש ${n} תנועות מזומן שטרם נסגרו בקופה`, path: '/checks' });
   }
   if (hasPerm(req, 'msg')) {
+    const soon = new Date(Date.parse(today) + 3 * 86_400_000).toISOString().slice(0, 10);
+    const promises = await db.contactNote.findMany({
+      where: { type: 'promise', fulfilledAt: null, promiseDate: { lte: soon } },
+    });
+    let due = 0;
+    for (const n of promises) if ((await promiseInfo(db, n, today))?.status !== 'kept') due++;
+    if (due)
+      out.push({
+        level: 'warn',
+        text: `${due} הבטחות תשלום מגיעות בימים הקרובים או שעברו`,
+        path: '/collection',
+      });
     const fams = await db.family.findMany({
       where: { archivedAt: null },
       include: { students: { where: { deletedAt: null }, select: { id: true } } },

@@ -27,6 +27,7 @@ import { PlansPage } from './pages/plans/PlansPage';
 import { CardsPage } from './pages/cards/CardsPage';
 import { ChecksPage } from './pages/checks/ChecksPage';
 import { BankPage } from './pages/bank/BankPage';
+import { CollectionPage } from './pages/collection/CollectionPage';
 import { HttpError } from './api/client';
 
 const queryClient = new QueryClient({
@@ -49,6 +50,7 @@ const BUILT: Record<string, JSX.Element> = {
   '/cards': <CardsPage />,
   '/checks': <ChecksPage />,
   '/bank': <BankPage />,
+  '/collection': <CollectionPage />,
 };
 
 createRoot(document.getElementById('root')!).render(

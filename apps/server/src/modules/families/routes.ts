@@ -28,6 +28,7 @@ import type { Tx } from '../../lib/db';
 import type { Prisma } from '@prisma/client';
 import { isExpiredOn, linkedPlanCounts } from '../cards/service';
 import { planRows } from '../plans/service';
+import { lastContact, noteRows, openPromise } from '../messages/collection';
 
 const idParam = z.object({ id: z.string().min(1).max(40) });
 const listQuery = z.object({
@@ -188,8 +189,14 @@ export async function familyRoutes(app: FastifyInstance) {
         childCount: f.students.length,
         balanceAgorot: bal,
         agingLabel: bal > 0 ? agingLabel(aging) : '-',
+        lastContact: null,
+        promise: null,
       };
     });
+    for (const r of rows) {
+      r.lastContact = await lastContact(db, r.id);
+      r.promise = await openPromise(db, r.id, today);
+    }
     return { families: rows };
   });
 
@@ -283,6 +290,8 @@ export async function familyRoutes(app: FastifyInstance) {
       students,
       balanceAgorot: students.reduce((a, s) => a + s.balanceAgorot, 0),
       aging,
+      promise: await openPromise(db, id, today),
+      notes: hasPerm(req, 'msg') ? await noteRows(db, id, today) : null,
     };
     return body;
   });

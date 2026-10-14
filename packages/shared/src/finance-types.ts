@@ -24,6 +24,8 @@ export interface FamilyListRow {
   childCount: number;
   balanceAgorot: number;
   agingLabel: string;
+  lastContact: string | null;
+  promise: import('./stage5').PromiseInfo | null;
 }
 
 export interface LedgerRow {
@@ -95,6 +97,9 @@ export interface FamilyCard {
   students: { id: string; fullName: string; grade: string; status: StudentStatus; balanceAgorot: number }[];
   balanceAgorot: number;
   aging: [number, number, number, number];
+  promise: import('./stage5').PromiseInfo | null;
+  /** Present only with the "msg" permission. */
+  notes: import('./stage5').ContactNoteRow[] | null;
 }
 
 export interface ReceiptRow {

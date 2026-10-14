@@ -5,6 +5,7 @@ import type { Db } from './lib/db';
 import { createMailer, type Mailer } from './lib/mailer';
 import { createPaymentProvider } from './providers/payment';
 import type { PaymentProvider } from './providers/payment/types';
+import { createTextChannels, type TextChannels } from './providers/messaging';
 
 export interface Deps {
   config: Config;
@@ -13,6 +14,7 @@ export interface Deps {
   mailer: Mailer;
   enc: Encryptor;
   payments: PaymentProvider;
+  texts: TextChannels;
 }
 
 export function createDeps<C extends Clock>(
@@ -27,6 +29,7 @@ export function createDeps<C extends Clock>(
     mailer: createMailer(db, config),
     enc: new Encryptor(config.APP_ENCRYPTION_KEY),
     payments: createPaymentProvider(config),
+    texts: createTextChannels(),
     ...overrides,
     clock,
   };

@@ -9,11 +9,16 @@ import { StudentModal } from './StudentModal';
 import { StatementModal } from './StatementModal';
 import { AddStudentModal, EditFamilyModal } from './StudentActions';
 import { PaymentFlow } from '../payments/PaymentFlow';
+import { NoteModal, PromiseText } from '../collection/CollectionModals';
+import { NOTE_TYPES } from '@tuition/shared';
+import { post } from '../../api/client';
+import { useInvalidateMoney } from '../../api/hooks';
 
 export function FamilyModal({ id }: { id: string }) {
   const { close, open } = useDialogs();
   const { has } = useAuth();
   const q = useFamily(id);
+  const invalidate = useInvalidateMoney();
   const f = q.data;
   return (
     <Modal
@@ -32,6 +37,15 @@ export function FamilyModal({ id }: { id: string }) {
                 disabled={!f.students.length}
               >
                 תשלום למשפחה
+              </button>
+            )}
+            {has('msg') && (
+              <button
+                className="b s"
+                type="button"
+                onClick={() => open(<NoteModal familyId={id} familyName={f.family.name} backToFamily />)}
+              >
+                הערת גבייה
               </button>
             )}
             {has('stu_edit') && (
@@ -108,7 +122,49 @@ export function FamilyModal({ id }: { id: string }) {
               </tbody>
             </table>
           </div>
-          <p className="mu">מעקב גבייה והבטחות תשלום ייבנו בשלב 5.</p>
+          {f.promise && (
+            <p
+              className="al"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
+            >
+              <span>
+                הבטחת תשלום: <PromiseText p={f.promise} />
+              </span>
+              {has('msg') && (
+                <button
+                  className="b s sm"
+                  type="button"
+                  onClick={async () => {
+                    await post(`/api/notes/${f.promise!.noteId}/fulfilled`);
+                    await invalidate();
+                  }}
+                >
+                  סמן כבוצע
+                </button>
+              )}
+            </p>
+          )}
+          {f.notes && (
+            <>
+              <h4>מעקב גבייה</h4>
+              {f.notes.map((n) => (
+                <div className="chk" key={n.id}>
+                  <span className="mu">
+                    {n.date.split('-').reverse().join('/')} · {n.byName}
+                  </span>{' '}
+                  <b>{NOTE_TYPES[n.type]}</b> {n.note}
+                  {n.promise && (
+                    <>
+                      {' '}
+                      · הבטחה <PromiseText p={n.promise} />
+                      {n.promise.status === 'kept' && ' (קוימה)'}
+                    </>
+                  )}
+                </div>
+              ))}
+              {!f.notes.length && <div className="mu">אין רישומים</div>}
+            </>
+          )}
         </>
       )}
     </Modal>

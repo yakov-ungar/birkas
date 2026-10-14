@@ -19,6 +19,10 @@ export class TestClock implements Clock {
   reset(): void {
     this.offsetMs = 0;
   }
+  /** Jump to a specific instant (the clock keeps running from there). */
+  set(d: Date): void {
+    this.offsetMs = d.getTime() - Date.now();
+  }
 }
 
 const IL_DATE = new Intl.DateTimeFormat('en-CA', {

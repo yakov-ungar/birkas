@@ -30,6 +30,7 @@ import { startScheduler } from './modules/scheduler';
 import { checkRoutes } from './modules/checks/routes';
 import { cashRoutes } from './modules/cash/routes';
 import { bankRoutes } from './modules/bank/routes';
+import { messageRoutes } from './modules/messages/routes';
 import { bodyContainsPan } from './lib/redact';
 import { AppError } from './lib/errors';
 import { fileURLToPath } from 'node:url';
@@ -144,6 +145,7 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
   await app.register(checkRoutes);
   await app.register(cashRoutes);
   await app.register(bankRoutes);
+  await app.register(messageRoutes);
   if (config.ENABLE_TEST_ROUTES) await app.register(testRoutes);
 
   if (config.PAYMENT_PROVIDER === 'mock') {

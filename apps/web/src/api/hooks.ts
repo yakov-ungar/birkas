@@ -51,6 +51,9 @@ const MONEY_KEYS = [
   'bank',
   'standing-orders',
   'masav',
+  'debtors',
+  'rules',
+  'history',
 ];
 
 /** After any money change: every list and card may show different balances. */

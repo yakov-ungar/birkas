@@ -329,7 +329,7 @@ describe('nightly scheduler', () => {
     const first = await schedulerTick(ctx.deps);
     expect(first.ran).toBe(true);
     expect((await schedulerTick(ctx.deps)).ran).toBe(false);
-    expect(await ctx.deps.db.jobRun.count()).toBe(1);
+    expect(await ctx.deps.db.jobRun.count({ where: { job: 'charges' } })).toBe(1);
     const mail = await ctx.deps.db.outbox.findFirstOrThrow({
       where: { subject: { contains: 'נכשלו בהרצה הלילית' } },
     });

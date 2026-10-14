@@ -13,6 +13,7 @@ import { FamilyModal } from './FamilyModal';
 import { AddStudentModal } from './StudentActions';
 import { ImportModal } from './ImportModal';
 import { PAY_STATUS } from './labels';
+import { PromiseText } from '../collection/CollectionModals';
 
 export function FamiliesPage() {
   const { has } = useAuth();
@@ -152,6 +153,8 @@ function FamiliesTab() {
             <th>ילדים</th>
             <th>יתרה</th>
             <th>גיל חוב</th>
+            <th>הבטחת תשלום</th>
+            <th>קשר אחרון</th>
           </tr>
         </thead>
         <tbody>
@@ -169,11 +172,12 @@ function FamiliesTab() {
                 <Money a={f.balanceAgorot} />
               </td>
               <td>{f.agingLabel}</td>
+              <td>{f.promise ? <PromiseText p={f.promise} /> : '-'}</td>
+              <td>{f.lastContact ? f.lastContact.split('-').reverse().join('/') : '-'}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="mu">עמודות "הבטחת תשלום" ו"קשר אחרון" יתווספו עם מעקב הגבייה בשלב 5.</p>
     </div>
   );
 }

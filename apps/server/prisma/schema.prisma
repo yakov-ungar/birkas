@@ -545,3 +545,72 @@ model MasavExportItem {
 
   @@index([planChargeId])
 }
+
+// ======================= Stage 5: collection and messages =======================
+
+/// Contact log with parents: notes and payment promises (demo "מעקב גבייה").
+model ContactNote {
+  id            String    @id @default(cuid())
+  familyId      String
+  at            DateTime
+  date          String
+  byId          String
+  byName        String
+  /// call | message | meeting | promise
+  type          String
+  note          String
+  promiseDate   String?
+  promiseAgorot Int?
+  fulfilledAt   DateTime?
+  fulfilledById String?
+
+  @@index([familyId])
+}
+
+/// The demo's four reminder rules (editable, not extendable; decision C13).
+model ReminderRule {
+  key       String   @id
+  name      String
+  enabled   Boolean
+  /// sms | whatsapp | email
+  channel   String
+  template  String
+  updatedAt DateTime @updatedAt
+}
+
+model MessageBatch {
+  id             String    @id @default(cuid())
+  at             DateTime
+  channel        String
+  /// manual | auto
+  source         String
+  ruleKey        String?
+  recipientCount Int
+  template       String
+  createdByName  String?
+  messages       Message[]
+}
+
+/// Outgoing SMS / WhatsApp / email. Automatic SMS and WhatsApp wait for allowed hours (decision C14).
+model Message {
+  id          String        @id @default(cuid())
+  batchId     String?
+  familyId    String?
+  channel     String
+  to          String
+  body        String
+  /// queued | sent | failed
+  status      String        @default("queued")
+  notBefore   DateTime
+  sentAt      DateTime?
+  providerRef String?
+  error       String?
+  /// Prevents sending the same automatic message twice.
+  dedupeKey   String?       @unique
+  ruleKey     String?
+  createdAt   DateTime      @default(now())
+  batch       MessageBatch? @relation(fields: [batchId], references: [id])
+
+  @@index([status, notBefore])
+  @@index([familyId, ruleKey])
+}

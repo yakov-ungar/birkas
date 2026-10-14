@@ -5,7 +5,8 @@ import type { Deps } from '../../deps';
 import type { Payment, Receipt } from '@prisma/client';
 import type { Tx } from '../../lib/db';
 import { recordAudit, type Actor } from '../audit/service';
-import { emailDocument, issueDocument, toRow } from '../receipts/service';
+import { issueDocument, toRow } from '../receipts/service';
+import { onReceipt } from '../messages/service';
 import type { Part } from '../../domain/allocate';
 
 export interface NewPayment {
@@ -171,18 +172,12 @@ export async function reversePayment(
   return { reversal, note, receipt: r };
 }
 
-/** Rule 4 of the demo ("שליחת קבלה אוטומטית"), wired to the reminder rules in stage 5. */
+/** Rule 4 of the demo ("שליחת קבלה אוטומטית"): delivery follows the editable reminder rule. */
 export async function autoSendReceipt(
   deps: Deps,
   log: FastifyBaseLogger,
   familyId: string,
   receiptId: string,
 ) {
-  const f = await deps.db.family.findUnique({ where: { id: familyId } });
-  if (!f?.email) return;
-  try {
-    await emailDocument(deps, receiptId, f.email);
-  } catch (e) {
-    log.warn({ err: e, receiptId }, 'auto receipt email failed');
-  }
+  await onReceipt(deps, log, familyId, receiptId);
 }

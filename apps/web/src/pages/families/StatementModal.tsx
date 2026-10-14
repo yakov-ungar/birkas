@@ -26,6 +26,7 @@ export function StatementModal({ familyId, after }: { familyId: string; after?: 
   });
   const [sending, setSending] = useState(false);
   const [email, setEmail] = useState('');
+  const [channel, setChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
   const [err, setErr] = useState<string | null>(null);
   const s = q.data;
   const done = () => (after ? open(after) : close());
@@ -81,20 +82,37 @@ export function StatementModal({ familyId, after }: { familyId: string; after?: 
           </p>
           {sending && (
             <div className="row">
-              <Field
-                label="שליחה במייל אל"
-                type="email"
-                dir="ltr"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <div className="field">
+                <label htmlFor="stmt-ch">ערוץ</label>
+                <select
+                  id="stmt-ch"
+                  value={channel}
+                  onChange={(e) => setChannel(e.target.value as 'email' | 'sms' | 'whatsapp')}
+                >
+                  <option value="email">מייל (עם PDF)</option>
+                  <option value="whatsapp">וואטסאפ</option>
+                  <option value="sms">SMS</option>
+                </select>
+              </div>
+              {channel === 'email' && (
+                <Field
+                  label="כתובת מייל"
+                  type="email"
+                  dir="ltr"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              )}
               <button
                 className="b"
                 type="button"
                 onClick={async () => {
                   try {
-                    await post(`/api/families/${familyId}/statement/send`, { email });
-                    toast(`דף החשבון נשלח ל-${email}`);
+                    await post(
+                      `/api/families/${familyId}/statement/send`,
+                      channel === 'email' ? { channel, email } : { channel },
+                    );
+                    toast(channel === 'email' ? `דף החשבון נשלח ל-${email}` : 'דף החשבון נשלח להורה');
                     setSending(false);
                   } catch (e) {
                     setErr((e as Error).message);
@@ -103,7 +121,6 @@ export function StatementModal({ familyId, after }: { familyId: string; after?: 
               >
                 שליחה
               </button>
-              <span className="mu">שליחה ב-SMS ובוואטסאפ תתווסף בשלב 5.</span>
             </div>
           )}
           <FormError message={err} />

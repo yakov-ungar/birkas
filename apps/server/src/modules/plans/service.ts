@@ -13,6 +13,7 @@ import { israelDate } from '../../lib/clock';
 import { recordAudit, SYSTEM_ACTOR, type Actor } from '../audit/service';
 import { recordPayment } from '../payments/service';
 import { isExpiredOn } from '../cards/service';
+import { onChargeFailed } from '../messages/service';
 import { ROLLING_AHEAD, monthlyDate, planLabel } from '../../domain/schedule';
 
 type PlanWithCharges = BillingPlan & { charges: PlanCharge[]; student: { fullName: string } };
@@ -160,6 +161,8 @@ export async function chargeInstallment(
         after: { reason, cardTxnId },
       });
     });
+    // Rule 2 of the demo: tell the parent (queued for allowed hours).
+    await onChargeFailed(deps, planChargeId).catch(() => undefined);
     return { result: 'failed' as const, reason, ...base };
   };
 
