@@ -4,7 +4,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, rmSync } from 'node:fs';
+import { createWriteStream, mkdirSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ALL_PERMISSIONS } from '@tuition/shared';
@@ -31,7 +31,7 @@ const env = {
   APP_BASE_URL: `http://127.0.0.1:${port}`,
   ENABLE_TEST_ROUTES: 'true',
   WEB_DIST: resolve(here, '../../web/dist'),
-  LOG_LEVEL: 'warn',
+  LOG_LEVEL: 'info',
 };
 execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
   cwd: resolve(here, '..'),
@@ -63,6 +63,8 @@ await db.user.create({
     totpEnabledAt: new Date(),
   },
 });
-const app = await buildApp({ ...deps0 });
+const logFile = join(dir, 'server.log');
+process.env.E2E_LOG_FILE = logFile;
+const app = await buildApp({ ...deps0 }, { logStream: createWriteStream(logFile) });
 await app.listen({ host: config.HOST, port: config.PORT });
 console.log(`e2e server on ${config.APP_BASE_URL}`);

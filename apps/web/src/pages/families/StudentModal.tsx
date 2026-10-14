@@ -12,11 +12,14 @@ import { StatementModal } from './StatementModal';
 import { StatusModal, DeleteStudentModal, RefundModal } from './StudentActions';
 import { PaymentFlow } from '../payments/PaymentFlow';
 import { ChargeModal, DiscountModal } from '../charges/ChargeModals';
+import { AddCardModal, useCardActions } from '../cards/CardsPage';
+import { NewPlanModal, PlanModal } from '../plans/PlanModals';
 
 export function StudentModal({ id }: { id: string }) {
   const { close, open } = useDialogs();
   const { has } = useAuth();
   const q = useStudent(id);
+  const cardActions = useCardActions();
   const c = q.data;
   const back = <StudentModal id={id} />;
   return (
@@ -59,6 +62,24 @@ export function StudentModal({ id }: { id: string }) {
                   הנחה / מלגה
                 </button>
               </>
+            )}
+            {has('cards') && (
+              <button
+                className="b s"
+                type="button"
+                onClick={() => open(<AddCardModal studentId={id} after={back} />)}
+              >
+                הוספת כרטיס
+              </button>
+            )}
+            {has('plans') && (
+              <button
+                className="b s"
+                type="button"
+                onClick={() => open(<NewPlanModal studentId={id} after={back} />)}
+              >
+                תוכנית חיוב
+              </button>
             )}
             {has('pay') && c.balanceAgorot < 0 && (
               <button
@@ -170,13 +191,40 @@ export function StudentModal({ id }: { id: string }) {
                 <span className="ltr">{k.exp}</span>
                 {k.expired && <span className="pill r">פג תוקף</span>}
                 {k.isDefault && <span className="pill g">ברירת מחדל</span>}
+                {!k.isDefault && (
+                  <button className="b s sm" type="button" onClick={() => void cardActions.setDefault(k)}>
+                    ברירת מחדל
+                  </button>
+                )}
+                <button
+                  className="b s sm"
+                  type="button"
+                  onClick={() => void cardActions.remove(k)}
+                  aria-label={`הסרת כרטיס ****${k.last4}`}
+                >
+                  הסר
+                </button>
               </div>
             ))
           ) : (
             <div className="mu">אין כרטיסים שמורים</div>
           )}
           <h4>תוכניות חיוב</h4>
-          <div className="mu">{has('plans') ? 'תוכניות חיוב ייבנו בשלב 3.' : 'אין הרשאה'}</div>
+          {c.plans === null ? (
+            <div className="mu">אין הרשאה</div>
+          ) : c.plans.length ? (
+            c.plans.map((p) => (
+              <div className="chk" key={p.id}>
+                {p.label} · <Money a={p.amountAgorot} />{' '}
+                <span className={`pill ${p.display[1]}`}>{p.display[0]}</span>
+                <button className="b s sm" type="button" onClick={() => open(<PlanModal id={p.id} />)}>
+                  פרטים
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="mu">אין תוכניות</div>
+          )}
         </>
       )}
     </Modal>

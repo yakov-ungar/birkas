@@ -26,6 +26,8 @@ import { EMPTY, loadMoney, summarize } from '../finance/money';
 import { hasPerm, todayOf, userIdOf } from '../finance/context';
 import type { Tx } from '../../lib/db';
 import type { Prisma } from '@prisma/client';
+import { isExpiredOn, linkedPlanCounts } from '../cards/service';
+import { planRows } from '../plans/service';
 
 const idParam = z.object({ id: z.string().min(1).max(40) });
 const listQuery = z.object({
@@ -49,8 +51,8 @@ export function cardRow(
   },
   studentName: string,
   today: string,
+  linkedPlans = 0,
 ): SavedCardRow {
-  const [y, m] = today.split('-').map(Number) as [number, number];
   return {
     id: c.id,
     studentId: c.studentId,
@@ -58,10 +60,10 @@ export function cardRow(
     last4: c.last4,
     brand: c.brand,
     exp: `${String(c.expMonth).padStart(2, '0')}/${String(c.expYear % 100).padStart(2, '0')}`,
-    // Valid through the last day of the expiry month (demo: expired once that month has passed).
-    expired: c.expYear < y || (c.expYear === y && c.expMonth < m),
+    expired: isExpiredOn(c.expMonth, c.expYear, today),
     holderName: c.holderName,
     isDefault: c.isDefault,
+    linkedPlans,
   };
 }
 
@@ -202,14 +204,19 @@ export async function familyRoutes(app: FastifyInstance) {
     const m = (await loadMoney(db, [id])).get(id) ?? EMPTY;
     const sum = summarize(m, today);
     const canCards = hasPerm(req, 'cards');
-    const cards = canCards
-      ? (
-          await db.savedCard.findMany({
-            where: { studentId: id, removedAt: null },
-            orderBy: { createdAt: 'asc' },
-          })
-        ).map((c) => cardRow(c, s.fullName, today))
-      : null;
+    let cards: SavedCardRow[] | null = null;
+    if (canCards) {
+      const rows = await db.savedCard.findMany({
+        where: { studentId: id, removedAt: null },
+        orderBy: { createdAt: 'asc' },
+      });
+      const linked = await linkedPlanCounts(
+        db,
+        rows.map((c) => c.id),
+      );
+      cards = rows.map((c) => cardRow(c, s.fullName, today, linked.get(c.id) ?? 0));
+    }
+    const plans = hasPerm(req, 'plans') ? await planRows(db, { studentId: id }) : null;
     const [payCount, checkCount] = await Promise.all([
       db.paymentAllocation.count({ where: { studentId: id } }),
       db.check.count({ where: { studentId: id } }),
@@ -233,6 +240,7 @@ export async function familyRoutes(app: FastifyInstance) {
       ...sum,
       ledger: buildLedger(m.charges, m.credits).map((l) => ({ ...l, studentName: s.fullName })),
       cards,
+      plans,
       hasFinancialHistory: payCount + checkCount > 0,
     };
     return body;

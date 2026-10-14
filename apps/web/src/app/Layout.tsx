@@ -3,11 +3,13 @@ import { useAuth } from './auth';
 import { NAV } from './nav';
 import { hebrewDate, weekday, fmtDate } from '../components/format';
 import { GlobalSearch } from './GlobalSearch';
+import { AlertsButton } from './Alerts';
 
 export function Layout() {
   const { me, has, logout } = useAuth();
   if (!me) return null;
-  const now = new Date();
+  // Server date, so the header follows the test clock on test servers.
+  const now = new Date(`${me.today}T12:00:00Z`);
   return (
     <>
       <a className="skip" href="#main">
@@ -23,6 +25,7 @@ export function Layout() {
           </span>
         </div>
         {has('stu_view') && <GlobalSearch />}
+        <AlertsButton />
         <span className="mu">
           מחובר כ{me.user.name} ({me.user.role})
         </span>

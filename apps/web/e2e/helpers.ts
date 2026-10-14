@@ -57,7 +57,19 @@ export async function signIn(
   used: Set<string>,
 ) {
   await login(page, user.email, user.password);
-  await page.getByLabel(/קוד בן 6 ספרות/).fill(await freshCode(user.secret, used));
-  await page.getByRole('button', { name: 'אימות' }).click();
-  await expect(page.getByRole('navigation', { name: 'תפריט ראשי' })).toBeVisible();
+  const nav = page.getByRole('navigation', { name: 'תפריט ראשי' });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.getByLabel(/קוד בן 6 ספרות/).fill(await freshCode(user.secret, used));
+    await page.getByRole('button', { name: 'אימות' }).click();
+    // Another spec may have used this window's code already (the server blocks replays): wait for the next one.
+    if (
+      await nav.waitFor({ timeout: 4000 }).then(
+        () => true,
+        () => false,
+      )
+    )
+      return;
+    used.add(authenticator.generate(user.secret));
+  }
+  await expect(nav).toBeVisible();
 }

@@ -22,6 +22,9 @@ import { FamiliesPage } from './pages/families/FamiliesPage';
 import { ChargesPage } from './pages/charges/ChargesPage';
 import { ReceiptsPage } from './pages/receipts/ReceiptsPage';
 import { DialogProvider } from './components/Dialogs';
+import { DashboardPage } from './pages/dashboard/DashboardPage';
+import { PlansPage } from './pages/plans/PlansPage';
+import { CardsPage } from './pages/cards/CardsPage';
 import { HttpError } from './api/client';
 
 const queryClient = new QueryClient({
@@ -39,6 +42,9 @@ const BUILT: Record<string, JSX.Element> = {
   '/families': <FamiliesPage />,
   '/charges': <ChargesPage />,
   '/receipts': <ReceiptsPage />,
+  '/': <DashboardPage />,
+  '/plans': <PlansPage />,
+  '/cards': <CardsPage />,
 };
 
 createRoot(document.getElementById('root')!).render(

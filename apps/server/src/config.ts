@@ -24,6 +24,10 @@ const envSchema = z
     PAYMENT_PROVIDER: z.enum(['mock']).default('mock'),
     /** Mock only: probability (0..1) that an otherwise valid charge fails, for tests. */
     MOCK_FAILURE_RATE: z.coerce.number().min(0).max(1).default(0),
+    /** Where to email operational alerts (failed nightly run). Defaults to active admins. */
+    ALERT_EMAIL: z.string().email().optional(),
+    /** Run the in-process scheduler (nightly charges). Off in tests. */
+    SCHEDULER_ENABLED: bool.default('true'),
     /** Test-only time travel and helper routes. Refused in production. */
     ENABLE_TEST_ROUTES: bool.default('false'),
   })

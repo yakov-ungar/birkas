@@ -1,8 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { existsSync, readFileSync } from 'node:fs';
 import { TEST_ONLY } from '../../plugins/access';
 import { TestClock } from '../../lib/clock';
 import { badRequest, parse } from '../../lib/errors';
+import { israelDate } from '../../lib/clock';
+import { monthlyDate } from '../../domain/schedule';
+import { schedulerTick } from '../scheduler';
+import { cookieName } from '../auth/session';
+import { sha256 } from '../../lib/crypto';
 
 /** Registered only when ENABLE_TEST_ROUTES=true outside production (see buildApp). */
 export async function testRoutes(app: FastifyInstance) {
@@ -27,8 +33,35 @@ export async function testRoutes(app: FastifyInstance) {
       if (JSON.stringify(rows, (_k, v) => (typeof v === 'bigint' ? String(v) : v)).includes(needle))
         hits.push(t.name);
     }
-    return { hits };
+    // The e2e server also writes its logs to a file; card numbers must not be there either.
+    const logFile = process.env.E2E_LOG_FILE;
+    if (logFile && existsSync(logFile) && readFileSync(logFile, 'utf8').includes(needle))
+      hits.push('server.log');
+    return { hits, logsScanned: !!logFile };
   });
+
+  /** Demo's "קדם חודש": moves the test clock to the same day next month (day capped at 28, like the demo). */
+  app.post('/api/test/clock/advance-month', { config: { access: TEST_ONLY } }, async (req) => {
+    if (!(clock instanceof TestClock)) throw badRequest('test clock is not active');
+    const today = israelDate(clock.now());
+    const day = Math.min(Number(today.slice(8, 10)), 28);
+    const target = monthlyDate(`${today.slice(0, 8)}${String(day).padStart(2, '0')}`, 1);
+    clock.advance(Date.parse(target) - Date.parse(today));
+    // Keep the caller signed in across the jump (otherwise the idle timeout logs them out).
+    const token = req.cookies[cookieName(app.deps.config.COOKIE_SECURE)];
+    if (token) {
+      const now = clock.now();
+      await db.session.updateMany({
+        where: { tokenHash: sha256(token), revokedAt: null },
+        data: { lastSeenAt: now, expiresAt: new Date(now.getTime() + 12 * 3600_000) },
+      });
+    }
+    return { today: israelDate(clock.now()) };
+  });
+
+  app.post('/api/test/scheduler/tick', { config: { access: TEST_ONLY } }, async () =>
+    schedulerTick(app.deps),
+  );
 
   app.post('/api/test/clock/advance', { config: { access: TEST_ONLY } }, async (req) => {
     const { minutes } = parse(

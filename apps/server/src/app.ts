@@ -23,6 +23,10 @@ import { chargeRoutes } from './modules/charges/routes';
 import { paymentRoutes } from './modules/payments/routes';
 import { receiptRoutes } from './modules/receipts/routes';
 import { searchRoutes } from './modules/search/routes';
+import { cardRoutes } from './modules/cards/routes';
+import { planRoutes } from './modules/plans/routes';
+import { dashboardRoutes } from './modules/dashboard/routes';
+import { startScheduler } from './modules/scheduler';
 import { bodyContainsPan } from './lib/redact';
 import { AppError } from './lib/errors';
 import { fileURLToPath } from 'node:url';
@@ -131,6 +135,9 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
   await app.register(paymentRoutes);
   await app.register(receiptRoutes);
   await app.register(searchRoutes);
+  await app.register(cardRoutes);
+  await app.register(planRoutes);
+  await app.register(dashboardRoutes);
   if (config.ENABLE_TEST_ROUTES) await app.register(testRoutes);
 
   if (config.PAYMENT_PROVIDER === 'mock') {
@@ -169,6 +176,11 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
           res.setHeader('cache-control', 'public, max-age=31536000, immutable');
       },
     });
+  }
+
+  if (config.SCHEDULER_ENABLED && config.NODE_ENV !== 'test') {
+    const stop = startScheduler(deps, app.log);
+    app.addHook('onClose', async () => stop());
   }
 
   app.setNotFoundHandler((req, reply) => {

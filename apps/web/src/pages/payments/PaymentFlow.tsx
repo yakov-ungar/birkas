@@ -303,6 +303,7 @@ export function PaymentFlow({
                   <td>
                     <MoneyField
                       label={`סכום ל${a.fullName}`}
+                      hideLabel
                       value={a.amountAgorot}
                       onChange={(v) =>
                         setAlloc(alloc.map((x, j) => (j === i ? { ...x, amountAgorot: v ?? 0 } : x)))

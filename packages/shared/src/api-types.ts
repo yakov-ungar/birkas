@@ -8,6 +8,10 @@ export interface MeResponse {
   user: { id: string; name: string; email: string; role: string; permissions: Permission[] };
   school: { name: string; yearName: string; grades: string[] };
   idleTimeoutMin: number;
+  /** True only on test servers: shows the demo's "advance a month" button. */
+  testMode: boolean;
+  /** Server's business date (Israel time), YYYY-MM-DD. */
+  today: string;
 }
 
 export interface UserRow {

@@ -62,6 +62,8 @@ export interface SavedCardRow {
   expired: boolean;
   holderName: string;
   isDefault: boolean;
+  /** Active plans that would charge this card. */
+  linkedPlans: number;
 }
 
 export interface StudentCard {
@@ -75,6 +77,8 @@ export interface StudentCard {
   ledger: LedgerRow[];
   /** Present only when the viewer holds the "cards" permission. */
   cards: SavedCardRow[] | null;
+  /** Present only when the viewer holds the "plans" permission. */
+  plans: import('./plan-types').PlanRow[] | null;
   hasFinancialHistory: boolean;
 }
 

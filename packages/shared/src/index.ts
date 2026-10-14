@@ -7,4 +7,6 @@ export * from './money';
 export * from './domain-types';
 export * from './schemas-finance';
 export * from './finance-types';
+export * from './schemas-plans';
+export * from './plan-types';
 export { hebrewErrorMap } from './zod-he';

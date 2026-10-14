@@ -1,0 +1,48 @@
+import type { FastifyBaseLogger } from 'fastify';
+import type { Deps } from '../../deps';
+import { israelDate } from '../../lib/clock';
+import { getSettings } from '../settings/service';
+import { runDueCharges } from '../plans/service';
+
+const HHMM = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Jerusalem',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/**
+ * Once the configured time has passed (Israel time), runs today's charges exactly once.
+ * The JobRun unique key (job, date) is the lock, so a restart or a second process cannot
+ * run the same day twice; if the server was down at that hour it catches up when it starts.
+ */
+export async function schedulerTick(deps: Deps, log?: FastifyBaseLogger) {
+  const now = deps.clock.now();
+  const { autoRunTime } = await getSettings(deps.db);
+  if (HHMM.format(now) < autoRunTime) return { ran: false as const };
+  const runKey = israelDate(now);
+  if (await deps.db.jobRun.findUnique({ where: { job_runKey: { job: 'charges', runKey } } }))
+    return { ran: false as const };
+  try {
+    const summary = await runDueCharges(deps, { runKey, trigger: 'schedule' });
+    log?.info(
+      { runKey, ok: summary.ok, failed: summary.failed, skipped: summary.skipped },
+      'nightly charges run',
+    );
+    return { ran: !summary.skipped, summary };
+  } catch (e) {
+    log?.error({ err: e, runKey }, 'nightly charges run failed');
+    return { ran: false as const };
+  }
+}
+
+export function startScheduler(deps: Deps, log: FastifyBaseLogger): () => void {
+  let busy = false;
+  const timer = setInterval(() => {
+    if (busy) return;
+    busy = true;
+    void schedulerTick(deps, log).finally(() => (busy = false));
+  }, 60_000);
+  timer.unref();
+  return () => clearInterval(timer);
+}

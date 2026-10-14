@@ -27,21 +27,29 @@ export interface SettingsView {
   settings: { grades: string[]; activeYearName: string; schoolName: string };
 }
 
+/** Every query whose data can change after a money operation. */
+const MONEY_KEYS = [
+  'students',
+  'families',
+  'student',
+  'family',
+  'charges',
+  'receipts',
+  'receipt',
+  'audit',
+  'statement',
+  'search',
+  'plans',
+  'plan',
+  'plan-cards',
+  'cards',
+  'dashboard',
+  'alerts',
+  'due',
+];
+
 /** After any money change: every list and card may show different balances. */
 export function useInvalidateMoney() {
   const qc = useQueryClient();
-  return () =>
-    Promise.all(
-      [
-        'students',
-        'families',
-        'student',
-        'family',
-        'charges',
-        'receipts',
-        'audit',
-        'statement',
-        'search',
-      ].map((k) => qc.invalidateQueries({ queryKey: [k] })),
-    );
+  return () => Promise.all(MONEY_KEYS.map((k) => qc.invalidateQueries({ queryKey: [k] })));
 }

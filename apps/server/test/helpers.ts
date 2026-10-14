@@ -33,6 +33,7 @@ export async function makeApp(env: Partial<Record<keyof Config, string>> = {}): 
     APP_BASE_URL: 'http://localhost:5173',
     LOG_LEVEL: 'info',
     ENABLE_TEST_ROUTES: 'true',
+    SCHEDULER_ENABLED: 'false',
     ...env,
   } as NodeJS.ProcessEnv);
   const db = await createDb(config.DATABASE_URL);
@@ -98,6 +99,8 @@ export const totpNow = (secret: string, clock: TestClock, offsetSteps = 0) =>
 export class Agent {
   cookies = new Map<string, string>();
   csrf = '';
+  /** Each client gets its own address, so per-IP rate limits apply per test client. */
+  readonly ip = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;
   constructor(private readonly app: FastifyInstance) {}
 
   async req(
@@ -109,6 +112,7 @@ export class Agent {
     const res = await this.app.inject({
       method: method as 'GET',
       url,
+      remoteAddress: this.ip,
       payload: body === undefined ? undefined : (body as object),
       headers: {
         ...(this.cookies.size ? { cookie: [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ') } : {}),

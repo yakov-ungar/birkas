@@ -20,13 +20,9 @@ import { emailDocument } from '../receipts/service';
 import { recordPayment, resultOf } from './service';
 import type { Deps } from '../../deps';
 import { ProviderError } from '../../providers/payment/types';
+import { isExpiredOn } from '../cards/service';
 
 const paymentDeclined = (msg: string) => new AppError(402, 'payment_declined', msg);
-
-export const isExpired = (expMonth: number, expYear: number, today: string) => {
-  const [y, m] = today.split('-').map(Number) as [number, number];
-  return expYear < y || (expYear === y && expMonth < m);
-};
 
 /** Resolves who the payment is for and how it splits between the kids. */
 async function resolveParts(
@@ -203,7 +199,7 @@ export async function paymentRoutes(app: FastifyInstance) {
         where: { id: d.cardId, removedAt: null, student: { familyId } },
       });
       if (!c) throw notFound('הכרטיס לא נמצא');
-      if (isExpired(c.expMonth, c.expYear, today)) throw badRequest('הכרטיס פג תוקף, בחר כרטיס אחר');
+      if (isExpiredOn(c.expMonth, c.expYear, today)) throw badRequest('הכרטיס פג תוקף, בחר כרטיס אחר');
       token = deps.enc.decrypt(c.tokenEnc);
       last4 = c.last4;
       cardId = c.id;
@@ -215,7 +211,7 @@ export async function paymentRoutes(app: FastifyInstance) {
         if (e instanceof ProviderError) throw badRequest(e.message);
         throw e;
       }
-      if (isExpired(t.expMonth, t.expYear, today)) throw badRequest('הכרטיס פג תוקף');
+      if (isExpiredOn(t.expMonth, t.expYear, today)) throw badRequest('הכרטיס פג תוקף');
       token = t.token;
       last4 = t.last4;
       if (d.newCard!.save) newCardToSave = t;

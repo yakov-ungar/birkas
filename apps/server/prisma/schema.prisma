@@ -178,6 +178,7 @@ model Student {
   allocations PaymentAllocation[]
   cards       SavedCard[]
   checks      Check[]
+  plans       BillingPlan[]
 
   @@index([familyId])
 }
@@ -344,6 +345,8 @@ model CardTransaction {
   errorMessageHe String?
   /// For refunds: the charge being refunded.
   refundOfId     String?
+  /// For scheduled plan charges: which installment this attempt was for.
+  planChargeId   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -365,4 +368,91 @@ model Check {
   student        Student  @relation(fields: [studentId], references: [id])
 
   @@index([status, dueDate])
+}
+
+// ======================= Stage 3: billing plans and the nightly run =======================
+
+/// Bank account for a standing order (הוראת קבע). Account number encrypted.
+model StandingOrder {
+  id           String        @id @default(cuid())
+  studentId    String
+  bank         String
+  branch       String
+  accountEnc   String
+  accountLast4 String
+  /// active | cancelled
+  status       String        @default("active")
+  createdAt    DateTime      @default(now())
+  plans        BillingPlan[]
+}
+
+model BillingPlan {
+  id              String         @id @default(cuid())
+  studentId       String
+  /// installments | recurring
+  type            String
+  /// installments: total amount; recurring: monthly amount
+  amountAgorot    Int
+  /// number of charges; 0 = recurring until further notice
+  count           Int
+  /// card | standing_order | transfer
+  method          String
+  cardId          String?
+  standingOrderId String?
+  startDate       String
+  dayOfMonth      Int
+  /// active | paused | cancelled | completed
+  status          String         @default("active")
+  /// Consent of the payer for recurring charges (decision A5).
+  consentMethod   String?
+  consentText     String?
+  consentAt       DateTime?
+  consentById     String?
+  /// Same create form submitted twice returns the first plan.
+  idempotencyKey  String?        @unique
+  createdById     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  student         Student        @relation(fields: [studentId], references: [id])
+  standingOrder   StandingOrder? @relation(fields: [standingOrderId], references: [id])
+  charges         PlanCharge[]
+
+  @@index([studentId])
+  @@index([status])
+}
+
+model PlanCharge {
+  id           String      @id @default(cuid())
+  planId       String
+  seq          Int
+  dueDate      String
+  amountAgorot Int
+  /// pending | processing | paid | failed | cancelled | expected (transfer / standing order awaiting the bank)
+  status       String      @default("pending")
+  attempts     Int         @default(0)
+  lastError    String?
+  paymentId    String?     @unique
+  processingAt DateTime?
+  updatedAt    DateTime    @updatedAt
+  plan         BillingPlan @relation(fields: [planId], references: [id])
+
+  @@unique([planId, seq])
+  @@index([status, dueDate])
+}
+
+/// One row per scheduled job run; the unique key is the lock against a double run.
+model JobRun {
+  id         String    @id @default(cuid())
+  job        String
+  runKey     String
+  trigger    String
+  startedAt  DateTime
+  finishedAt DateTime?
+  /// running | ok | failed
+  status     String
+  okCount    Int       @default(0)
+  failCount  Int       @default(0)
+  summary    String?
+
+  @@unique([job, runKey])
 }

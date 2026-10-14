@@ -12,12 +12,15 @@ export function MoneyField({
   onChange,
   error,
   autoFocus,
+  hideLabel,
 }: {
   label: string;
   value: number | null;
   onChange: (agorot: number | null) => void;
   error?: string;
   autoFocus?: boolean;
+  /** Visually hidden label (still read by screen readers), e.g. inside a table row. */
+  hideLabel?: boolean;
 }) {
   const id = useId();
   const [text, setText] = useState(value !== null ? agorotToInput(value) : '');
@@ -25,7 +28,9 @@ export function MoneyField({
   const bad = !!text.trim() && parsed === null;
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : undefined}>
+        {label}
+      </label>
       <input
         id={id}
         inputMode="decimal"

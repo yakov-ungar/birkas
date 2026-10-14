@@ -15,6 +15,7 @@ import { hashPassword, passwordProblem, verifyPassword } from '../../lib/passwor
 import { checkTotp, newTotpSecret, totpQr } from '../../lib/totp';
 import { randomToken, sha256 } from '../../lib/crypto';
 import { getSettings } from '../settings/service';
+import { israelDate } from '../../lib/clock';
 import { recordAudit } from '../audit/service';
 import { clearSessionCookie, createSession, upgradeSession } from './session';
 
@@ -209,6 +210,8 @@ export async function authRoutes(app: FastifyInstance) {
         user: { ...auth.user, permissions: normalizePermissions(auth.user.permissions) },
         school: { name: s.schoolName, yearName: s.activeYearName, grades: s.grades },
         idleTimeoutMin: s.idleTimeoutMin,
+        testMode: deps.config.ENABLE_TEST_ROUTES && deps.config.NODE_ENV !== 'production',
+        today: israelDate(clock.now()),
       };
       return body;
     },
