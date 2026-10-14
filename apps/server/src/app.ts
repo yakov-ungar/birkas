@@ -27,6 +27,9 @@ import { cardRoutes } from './modules/cards/routes';
 import { planRoutes } from './modules/plans/routes';
 import { dashboardRoutes } from './modules/dashboard/routes';
 import { startScheduler } from './modules/scheduler';
+import { checkRoutes } from './modules/checks/routes';
+import { cashRoutes } from './modules/cash/routes';
+import { bankRoutes } from './modules/bank/routes';
 import { bodyContainsPan } from './lib/redact';
 import { AppError } from './lib/errors';
 import { fileURLToPath } from 'node:url';
@@ -138,6 +141,9 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
   await app.register(cardRoutes);
   await app.register(planRoutes);
   await app.register(dashboardRoutes);
+  await app.register(checkRoutes);
+  await app.register(cashRoutes);
+  await app.register(bankRoutes);
   if (config.ENABLE_TEST_ROUTES) await app.register(testRoutes);
 
   if (config.PAYMENT_PROVIDER === 'mock') {

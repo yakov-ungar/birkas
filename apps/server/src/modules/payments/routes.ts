@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
   formatMoney,
@@ -16,8 +16,7 @@ import { balancesOf } from '../finance/money';
 import { hasPerm, todayOf } from '../finance/context';
 import { cardRow } from '../families/routes';
 import { issueDocument } from '../receipts/service';
-import { emailDocument } from '../receipts/service';
-import { recordPayment, resultOf } from './service';
+import { autoSendReceipt, openCashSessionId, recordPayment, resultOf } from './service';
 import type { Deps } from '../../deps';
 import { ProviderError } from '../../providers/payment/types';
 import { isExpiredOn } from '../cards/service';
@@ -58,17 +57,6 @@ async function resolveParts(
       input.amountAgorot,
     ),
   };
-}
-
-/** Rule 4 of the demo ("שליחת קבלה אוטומטית"), wired to the reminder rules in stage 5. */
-async function autoSendReceipt(deps: Deps, req: FastifyRequest, familyId: string, receiptId: string) {
-  const f = await deps.db.family.findUnique({ where: { id: familyId } });
-  if (!f?.email) return;
-  try {
-    await emailDocument(deps, receiptId, f.email);
-  } catch (e) {
-    req.log.warn({ err: e, receiptId }, 'auto receipt email failed');
-  }
 }
 
 export async function paymentRoutes(app: FastifyInstance) {
@@ -176,7 +164,7 @@ export async function paymentRoutes(app: FastifyInstance) {
         });
         return resultOf(tx, payment.id);
       });
-      if (result.receipt) await autoSendReceipt(deps, req, familyId, result.receipt.id);
+      if (result.receipt) await autoSendReceipt(deps, req.log, familyId, result.receipt.id);
       return result;
     }
 
@@ -303,7 +291,7 @@ export async function paymentRoutes(app: FastifyInstance) {
       });
       return resultOf(tx, payment.id, { approvalCode: r.approvalCode });
     });
-    if (result.receipt) await autoSendReceipt(deps, req, familyId, result.receipt.id);
+    if (result.receipt) await autoSendReceipt(deps, req.log, familyId, result.receipt.id);
     return result;
   });
 
@@ -335,6 +323,7 @@ export async function paymentRoutes(app: FastifyInstance) {
           date: today,
           reference: `החזר: ${input.reason}`,
           kind: 'refund',
+          cashSessionId: input.method === 'cash' ? await openCashSessionId(tx) : null,
           idempotencyKey: input.idempotencyKey,
           source: 'staff',
           createdById: req.auth!.user.id,

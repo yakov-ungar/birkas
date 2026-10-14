@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { makeApp, signedIn, type TestCtx, type Agent } from './helpers';
-import { addStudent, card, cash, key, mockCard, newFamily, pay } from './finance-helpers';
+import { addStudent, card, cash, key, mockCard, newFamily, openCash, pay } from './finance-helpers';
 
 let ctx: TestCtx;
 let a: Agent;
 beforeEach(async () => {
   ctx = await makeApp();
   a = (await signedIn(ctx)).agent;
+  await openCash(a);
 });
 afterEach(() => ctx.close());
 

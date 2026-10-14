@@ -1,13 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { DOC_TYPES, emailSchema, formatMoney, reasonSchema, type DocType } from '@tuition/shared';
+import { DOC_TYPES, emailSchema, reasonSchema, type DocType } from '@tuition/shared';
 import { staff } from '../../plugins/access';
 import { actorOf } from '../../plugins/auth';
 import { AppError, conflict, notFound, parse } from '../../lib/errors';
 import { recordAudit } from '../audit/service';
 import { todayOf } from '../finance/context';
-import { resultOf } from '../payments/service';
-import { documentPdf, emailDocument, issueDocument, receiptView, toRow } from './service';
+import { resultOf, reversePayment } from '../payments/service';
+import { documentPdf, emailDocument, receiptView, toRow } from './service';
 
 const idParam = z.object({ id: z.string().min(1).max(40) });
 
@@ -121,45 +121,11 @@ export async function receiptRoutes(app: FastifyInstance) {
     }
 
     return db.$transaction(async (tx) => {
-      const reversal = await tx.payment.create({
-        data: {
-          familyId: r.familyId,
-          method: r.payment.method,
-          amountAgorot: -r.payment.amountAgorot,
-          date: today,
-          reference: `ביטול קבלה ${r.number}`,
-          kind: 'reversal',
-          reversalOfId: r.paymentId,
-          idempotencyKey: `reversal:${r.paymentId}`,
-          source: 'staff',
-          createdById: req.auth!.user.id,
-          allocations: {
-            create: r.payment.allocations.map((a) => ({
-              studentId: a.studentId,
-              amountAgorot: -a.amountAgorot,
-            })),
-          },
-        },
-      });
-      const note = await issueDocument(tx, now, {
-        docType: 'credit_note',
-        paymentId: reversal.id,
-        familyId: r.familyId,
-        date: today,
-        payerName: r.payerName,
-        amountAgorot: r.amountAgorot,
-        method: r.method,
-        reference: reason,
-        lines: r.payment.allocations.map((a) => ({ studentId: a.studentId, amountAgorot: a.amountAgorot })),
-        creditForReceiptId: r.id,
+      const { reversal } = await reversePayment(tx, now, actor, {
+        paymentId: r.paymentId,
         reason,
-      });
-      await recordAudit(tx, actor, now, {
-        action: 'receipt.cancel',
-        summary: `בוטלה קבלה ${r.number} (${formatMoney(r.amountAgorot)}): ${reason}. אישור זיכוי ${note.number}`,
-        entity: 'Receipt',
-        entityId: r.id,
-        after: { creditNoteNumber: note.number, reason },
+        date: today,
+        createdById: req.auth!.user.id,
       });
       return resultOf(tx, reversal.id);
     });

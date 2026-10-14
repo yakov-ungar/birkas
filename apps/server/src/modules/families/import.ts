@@ -34,6 +34,7 @@ const bodySchema = z
 
 const cellText = (v: unknown): string => {
   if (v === null || v === undefined) return '';
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
   if (typeof v === 'object') {
     const o = v as { text?: string; result?: unknown; richText?: { text: string }[] };
     if (o.richText) return o.richText.map((r) => r.text).join('');
@@ -43,7 +44,7 @@ const cellText = (v: unknown): string => {
   return String(v);
 };
 
-async function readRows(fileName: string, buf: Buffer): Promise<string[][]> {
+export async function readRows(fileName: string, buf: Buffer): Promise<string[][]> {
   const lower = fileName.toLowerCase();
   if (lower.endsWith('.csv') || lower.endsWith('.txt')) {
     const text = buf.toString('utf8').replace(/^\uFEFF/, '');

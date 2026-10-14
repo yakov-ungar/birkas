@@ -46,6 +46,11 @@ const MONEY_KEYS = [
   'dashboard',
   'alerts',
   'due',
+  'checks',
+  'cash',
+  'bank',
+  'standing-orders',
+  'masav',
 ];
 
 /** After any money change: every list and card may show different balances. */

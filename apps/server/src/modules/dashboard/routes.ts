@@ -76,6 +76,15 @@ export async function alertsFor(deps: Deps, req: FastifyRequest): Promise<AlertI
     });
     if (soon) out.push({ level: 'info', text: `${soon} שיקים לפירעון בשבוע הקרוב`, path: '/checks' });
   }
+  if (hasPerm(req, 'bank')) {
+    const pending = await db.bankTransaction.count({ where: { status: 'pending' } });
+    if (pending) out.push({ level: 'info', text: `${pending} תנועות בנק ממתינות לאישור`, path: '/bank' });
+  }
+  if (hasPerm(req, 'checks')) {
+    const open = await db.cashSession.findFirst({ where: { closedAt: null } });
+    const n = open ? await db.payment.count({ where: { cashSessionId: open.id } }) : 0;
+    if (n) out.push({ level: 'info', text: `יש ${n} תנועות מזומן שטרם נסגרו בקופה`, path: '/checks' });
+  }
   if (hasPerm(req, 'msg')) {
     const fams = await db.family.findMany({
       where: { archivedAt: null },

@@ -3,6 +3,11 @@ import AxeBuilder from '@axe-core/playwright';
 import { OFFICE, signIn } from './helpers';
 
 const used = new Set<string>();
+
+// This spec moves the server's test clock; put it back so later specs (and their 2FA codes) use real time.
+test.afterAll(async ({ request }) => {
+  await request.post('/api/test/clock/reset');
+});
 const PAN = '5326100000000004';
 
 test('stage 3: save a card, create a plan, run it, advance a month and run again', async ({

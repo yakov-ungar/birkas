@@ -24,7 +24,8 @@ export function displayStatus(
   p: Pick<BillingPlan, 'status'> & { charges: Pick<PlanCharge, 'status'>[] },
 ): [string, string] {
   if (p.status === 'cancelled') return ['בוטלה', 'gr'];
-  if (p.charges.every((c) => c.status === 'paid' || c.status === 'cancelled')) return ['הסתיימה', 'g'];
+  if (p.charges.every((c) => c.status === 'paid' || c.status === 'cancelled' || c.status === 'returned'))
+    return ['הסתיימה', 'g'];
   if (p.charges.some((c) => c.status === 'failed')) return ['נכשל חיוב', 'r'];
   return p.status === 'active' ? ['פעילה', 'g'] : ['מושבתת', 'o'];
 }
@@ -36,11 +37,11 @@ export function toPlanRow(p: PlanWithCharges): PlanRow {
     studentId: p.studentId,
     studentName: p.student.fullName,
     type: p.type as PlanRow['type'],
-    label: planLabel(p.type, p.count, p.charges.length),
+    label: planLabel(p.type, p.count, p.type === 'installments' ? p.count : p.charges.length),
     amountAgorot: p.amountAgorot,
     count: p.count,
     paidCount: p.charges.filter((c) => c.status === 'paid').length,
-    totalCount: p.charges.length,
+    totalCount: p.type === 'installments' ? p.count : p.charges.length,
     method: p.method as PlanMethod,
     methodLabel: p.method === 'card' ? 'אשראי' : PLAN_METHODS[p.method as PlanMethod],
     next: next && p.status === 'active' ? { dueDate: next.dueDate, amountAgorot: next.amountAgorot } : null,
@@ -83,7 +84,7 @@ export async function topUpRecurring(tx: Tx, planId: string) {
 export async function refreshCompletion(tx: Tx, planId: string) {
   const p = await tx.billingPlan.findUniqueOrThrow({ where: { id: planId }, include: { charges: true } });
   if (p.status !== 'active' && p.status !== 'paused') return;
-  if (p.charges.every((c) => c.status === 'paid' || c.status === 'cancelled')) {
+  if (p.charges.every((c) => c.status === 'paid' || c.status === 'cancelled' || c.status === 'returned')) {
     await tx.billingPlan.update({ where: { id: planId }, data: { status: 'completed' } });
   }
 }
@@ -181,8 +182,7 @@ export async function chargeInstallment(
         planChargeId,
       },
     }));
-  const total =
-    plan.type === 'installments' ? await db.planCharge.count({ where: { planId: plan.id } }) : plan.count;
+  const total = plan.count;
   const r =
     txn.status === 'approved'
       ? {

@@ -31,6 +31,12 @@ export async function pay(a: Agent, body: Record<string, unknown>) {
 
 export const cash = { method: 'cash', receivedBy: 'קופאית' };
 
+/** Cash needs an open drawer (decision B9). */
+export async function openCash(a: Agent, floatAgorot = 0) {
+  const r = await a.req('POST', '/api/cash/open', { openingFloatAgorot: floatAgorot });
+  if (r.statusCode !== 200) throw new Error(`openCash ${r.statusCode} ${r.body}`);
+}
+
 export const mockCard = (last4 = '1111', save = false, exp: [number, number] = [12, 2030]) => ({
   token: `mock_tok_${last4}_${'a'.repeat(16)}`,
   last4,

@@ -4,7 +4,7 @@ import { chargeInstallment, runDueCharges } from '../src/modules/plans/service';
 import { schedulerTick } from '../src/modules/scheduler';
 import { SYSTEM_ACTOR } from '../src/modules/audit/service';
 import { makeApp, signedIn, type Agent, type TestCtx } from './helpers';
-import { card, key, mockCard, newFamily } from './finance-helpers';
+import { card, key, mockCard, newFamily, openCash } from './finance-helpers';
 
 let ctx: TestCtx;
 let a: Agent;
@@ -373,6 +373,7 @@ describe('alerts and dashboard', () => {
 
   it('summarizes collection on the dashboard', async () => {
     const f = await newFamily(a);
+    await openCash(a);
     await a.req('POST', '/api/payments', {
       idempotencyKey: key(),
       studentId: f.studentId,

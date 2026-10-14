@@ -25,6 +25,8 @@ import { DialogProvider } from './components/Dialogs';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { PlansPage } from './pages/plans/PlansPage';
 import { CardsPage } from './pages/cards/CardsPage';
+import { ChecksPage } from './pages/checks/ChecksPage';
+import { BankPage } from './pages/bank/BankPage';
 import { HttpError } from './api/client';
 
 const queryClient = new QueryClient({
@@ -45,6 +47,8 @@ const BUILT: Record<string, JSX.Element> = {
   '/': <DashboardPage />,
   '/plans': <PlansPage />,
   '/cards': <CardsPage />,
+  '/checks': <ChecksPage />,
+  '/bank': <BankPage />,
 };
 
 createRoot(document.getElementById('root')!).render(

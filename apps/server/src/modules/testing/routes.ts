@@ -59,6 +59,12 @@ export async function testRoutes(app: FastifyInstance) {
     return { today: israelDate(clock.now()) };
   });
 
+  app.post('/api/test/clock/reset', { config: { access: TEST_ONLY } }, async () => {
+    if (!(clock instanceof TestClock)) throw badRequest('test clock is not active');
+    clock.reset();
+    return { now: clock.now().toISOString() };
+  });
+
   app.post('/api/test/scheduler/tick', { config: { access: TEST_ONLY } }, async () =>
     schedulerTick(app.deps),
   );

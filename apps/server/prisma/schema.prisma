@@ -244,6 +244,8 @@ model Payment {
   reversalOfId   String?             @unique
   cardTxnId      String?             @unique
   checkId        String?
+  /// Cash only: the drawer session the money went into or out of (decision B9).
+  cashSessionId  String?
   idempotencyKey String              @unique
   /// staff | portal | scheduler | bank | check
   source         String
@@ -352,20 +354,25 @@ model CardTransaction {
 }
 
 model Check {
-  id             String   @id @default(cuid())
-  studentId      String
-  familyId       String
-  number         String
-  bank           String
-  amountAgorot   Int
-  dueDate        String
+  id              String    @id @default(cuid())
+  studentId       String
+  familyId        String
+  number          String
+  bank            String
+  amountAgorot    Int
+  dueDate         String
   /// pending | deposited | returned | cancelled
-  status         String   @default("pending")
-  paymentId      String?
-  idempotencyKey String?  @unique
-  createdById    String?
-  createdAt      DateTime @default(now())
-  student        Student  @relation(fields: [studentId], references: [id])
+  status          String    @default("pending")
+  paymentId       String?
+  /// Set when the check bounced: the reversing payment and the fee charge.
+  returnPaymentId String?
+  feeChargeId     String?
+  depositedAt     DateTime?
+  returnedAt      DateTime?
+  idempotencyKey  String?   @unique
+  createdById     String?
+  createdAt       DateTime  @default(now())
+  student         Student   @relation(fields: [studentId], references: [id])
 
   @@index([status, dueDate])
 }
@@ -455,4 +462,86 @@ model JobRun {
   summary    String?
 
   @@unique([job, runKey])
+}
+
+// ======================= Stage 4: cash drawer, bank, Masav =======================
+
+/// One shared cash drawer (decision B9). At most one open session (partial unique index in 0004).
+model CashSession {
+  id                 String    @id @default(cuid())
+  openedAt           DateTime
+  openedById         String
+  openedByName       String
+  openingFloatAgorot Int
+  closedAt           DateTime?
+  closedById         String?
+  closedByName       String?
+  expectedAgorot     Int?
+  countedAgorot      Int?
+  diffAgorot         Int?
+  notes              String?
+}
+
+model BankImport {
+  id           String            @id @default(cuid())
+  fileName     String
+  fileHash     String            @unique
+  importedAt   DateTime
+  importedById String
+  rows         Int
+  matched      Int
+  transactions BankTransaction[]
+}
+
+model BankTransaction {
+  id                    String     @id @default(cuid())
+  importId              String
+  date                  String
+  description           String
+  reference             String     @default("")
+  amountAgorot          Int
+  rowHash               String     @unique
+  suggestedFamilyId     String?
+  suggestedPlanChargeId String?
+  /// high | medium | none
+  matchLevel            String     @default("none")
+  matchReason           String?
+  /// pending | registered | ignored
+  status                String     @default("pending")
+  paymentId             String?
+  familyId              String?
+  decidedById           String?
+  decidedAt             DateTime?
+  bankImport            BankImport @relation(fields: [importId], references: [id])
+
+  @@index([status])
+}
+
+model MasavExport {
+  id          String            @id @default(cuid())
+  createdAt   DateTime
+  createdById String
+  chargeDate  String
+  count       Int
+  totalAgorot Int
+  fileName    String
+  sha256      String
+  /// submitted | settled
+  status      String            @default("submitted")
+  settledAt   DateTime?
+  items       MasavExportItem[]
+}
+
+model MasavExportItem {
+  id           String      @id @default(cuid())
+  exportId     String
+  planChargeId String
+  amountAgorot Int
+  /// submitted | paid | returned
+  status       String      @default("submitted")
+  returnReason String?
+  paymentId    String?
+  export       MasavExport @relation(fields: [exportId], references: [id])
+
+  @@index([planChargeId])
 }

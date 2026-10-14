@@ -15,6 +15,7 @@ import { AddStudentModal } from '../families/StudentActions';
 import { FamilyModal } from '../families/FamilyModal';
 import { NewPlanModal } from '../plans/PlanModals';
 import { AGING_LABELS } from '../families/labels';
+import { CloseCashModal, OpenCashModal, useCash } from '../checks/ChecksPage';
 
 /** Ordinal blue ramp for ordered debt-age buckets (validated: dataviz validate_palette --ordinal). */
 const AGING_RAMP = ['#86b6ef', '#3987e5', '#1c5cab', '#0d366b'];
@@ -25,6 +26,7 @@ export function DashboardPage() {
   const nav = useNavigate();
   const q = useQuery({ queryKey: ['dashboard'], queryFn: () => get<Dashboard>('/api/dashboard') });
   const alerts = useAlerts();
+  const cash = useCash(has('checks'));
   const d = q.data;
   return (
     <>
@@ -48,6 +50,23 @@ export function DashboardPage() {
         {has('stu_edit') && (
           <button className="b s" type="button" onClick={() => open(<AddStudentModal />)}>
             תלמיד חדש
+          </button>
+        )}
+        {has('checks') && cash.data && (
+          <button
+            className="b s"
+            type="button"
+            onClick={() =>
+              open(
+                cash.data!.open ? (
+                  <CloseCashModal expected={cash.data!.open.expectedAgorot} />
+                ) : (
+                  <OpenCashModal />
+                ),
+              )
+            }
+          >
+            {cash.data.open ? 'סגירת קופה' : 'פתיחת קופה'}
           </button>
         )}
       </div>

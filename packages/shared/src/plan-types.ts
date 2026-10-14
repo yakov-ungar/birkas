@@ -1,6 +1,14 @@
 import type { PlanMethod } from './schemas-plans';
 
-export type PlanChargeStatus = 'pending' | 'processing' | 'paid' | 'failed' | 'cancelled' | 'expected';
+export type PlanChargeStatus =
+  | 'pending'
+  | 'processing'
+  | 'paid'
+  | 'failed'
+  | 'cancelled'
+  | 'expected'
+  | 'submitted'
+  | 'returned';
 export type PlanStatus = 'active' | 'paused' | 'cancelled' | 'completed';
 
 export const PLAN_CHARGE_STATUS: Record<PlanChargeStatus, [string, string]> = {
@@ -10,6 +18,8 @@ export const PLAN_CHARGE_STATUS: Record<PlanChargeStatus, [string, string]> = {
   failed: ['נכשל', 'r'],
   cancelled: ['בוטל', 'gr'],
   expected: ['ממתין להעברה', 'bl'],
+  submitted: ['נשלח לבנק', 'bl'],
+  returned: ['הוחזר מהבנק', 'r'],
 };
 
 export interface PlanRow {
