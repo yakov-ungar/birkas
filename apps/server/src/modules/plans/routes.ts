@@ -1,23 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import {
-  CONSENT_METHODS,
-  PLAN_METHODS,
-  consentText,
-  formatMoney,
-  planCreateSchema,
-  planInputSchema,
-  swapCardSchema,
-  type PlanDetail,
-  type PlanInput,
-  type PlanMethod,
-} from '@tuition/shared';
+import { planCreateSchema, planInputSchema, swapCardSchema, type PlanDetail } from '@tuition/shared';
 import { staff } from '../../plugins/access';
 import { actorOf } from '../../plugins/auth';
 import { badRequest, conflict, notFound, parse } from '../../lib/errors';
 import { recordAudit } from '../audit/service';
 import { todayOf } from '../finance/context';
-import { buildSchedule, planLabel } from '../../domain/schedule';
+import { planLabel } from '../../domain/schedule';
+import { consentFor, createPlan, validatePlan } from './create';
 import { chargeInstallment, planRows, refreshCompletion, runDueCharges, toPlanRow } from './service';
 import type { Deps } from '../../deps';
 import type { Tx } from '../../lib/db';
@@ -25,48 +15,6 @@ import { isExpiredOn } from '../cards/service';
 import type { BillingPlan } from '@prisma/client';
 
 const idParam = z.object({ id: z.string().min(1).max(40) });
-
-async function validatePlan(deps: Deps, input: PlanInput) {
-  const s = await deps.db.student.findFirst({
-    where: { id: input.studentId, deletedAt: null },
-    include: { family: true },
-  });
-  if (!s) throw notFound('התלמיד לא נמצא');
-  if (input.method === 'card') {
-    // Demo: only the student's own saved cards.
-    const c = await deps.db.savedCard.findFirst({
-      where: { id: input.cardId, studentId: s.id, removedAt: null },
-    });
-    if (!c)
-      throw badRequest('לתלמיד אין כרטיס שמור כזה. הוסף כרטיס בכרטיס התלמיד או במסך כרטיסים שמורים', {
-        cardId: 'כרטיס לא נמצא',
-      });
-  }
-  let schedule;
-  try {
-    schedule = buildSchedule(input.type, input.amountAgorot, input.count, input.startDate);
-  } catch (e) {
-    if (e instanceof RangeError) throw badRequest(e.message);
-    throw e;
-  }
-  return { student: s, schedule };
-}
-
-const consentFor = (input: PlanInput, payer: string) =>
-  consentText({
-    payer,
-    method:
-      input.method === 'card'
-        ? 'חיוב כרטיס אשראי'
-        : input.method === 'standing_order'
-          ? 'חיוב בהוראת קבע'
-          : 'תשלום בהעברה',
-    label: planLabel(input.type, input.count, input.type === 'installments' ? input.count : input.count),
-    amount:
-      input.type === 'installments'
-        ? `${formatMoney(input.amountAgorot)} סה״כ`
-        : `${formatMoney(input.amountAgorot)} לחודש`,
-  });
 
 async function detail(deps: Deps, id: string): Promise<PlanDetail> {
   const p = await deps.db.billingPlan.findUnique({
@@ -108,6 +56,8 @@ async function detail(deps: Deps, id: string): Promise<PlanDetail> {
   };
 }
 
+export { detail as planDetail };
+
 export async function planRoutes(app: FastifyInstance) {
   const deps = app.deps;
   const { db, clock } = deps;
@@ -141,7 +91,7 @@ export async function planRoutes(app: FastifyInstance) {
 
   app.post('/api/plans/preview', { config: { access: staff('plans') } }, async (req) => {
     const input = parse(planInputSchema, req.body);
-    const { student, schedule } = await validatePlan(deps, input);
+    const { student, schedule } = await validatePlan(deps.db, input);
     return {
       label: planLabel(input.type, input.count, schedule.length),
       studentName: student.fullName,
@@ -156,55 +106,18 @@ export async function planRoutes(app: FastifyInstance) {
     const { plan: input, idempotencyKey, consent } = parse(planCreateSchema, req.body);
     const existing = await db.billingPlan.findUnique({ where: { idempotencyKey } });
     if (existing) return detail(deps, existing.id);
-    const { student, schedule } = await validatePlan(deps, input);
     if (input.method !== 'transfer' && !consent)
       throw badRequest('יש לאשר שההורה הסכים לחיוב', { consent: 'נדרש אישור ההורה' });
     const now = clock.now();
-    const id = await db.$transaction(async (tx) => {
-      let standingOrderId: string | null = null;
-      if (input.method === 'standing_order') {
-        const so = await tx.standingOrder.create({
-          data: {
-            studentId: student.id,
-            bank: input.standingOrder!.bank,
-            branch: input.standingOrder!.branch,
-            accountEnc: deps.enc.encrypt(input.standingOrder!.account),
-            accountLast4: input.standingOrder!.account.slice(-4),
-          },
-        });
-        standingOrderId = so.id;
-      }
-      const p = await tx.billingPlan.create({
-        data: {
-          studentId: student.id,
-          type: input.type,
-          amountAgorot: input.amountAgorot,
-          count: input.count,
-          method: input.method,
-          cardId: input.method === 'card' ? input.cardId! : null,
-          standingOrderId,
-          startDate: input.startDate,
-          dayOfMonth: Number(input.startDate.slice(8, 10)),
-          consentMethod: consent ? CONSENT_METHODS[consent.method] : null,
-          consentText: consent ? consentFor(input, student.family.parentName) : null,
-          consentAt: consent ? now : null,
-          consentById: consent ? req.auth!.user.id : null,
-          idempotencyKey,
-          createdById: req.auth!.user.id,
-          charges: {
-            create: schedule.map((c) => ({ seq: c.seq, dueDate: c.dueDate, amountAgorot: c.amountAgorot })),
-          },
-        },
-      });
-      await recordAudit(tx, actorOf(req), now, {
-        action: 'plan.create',
-        summary: `נוצרה תוכנית: ${planLabel(p.type, p.count, schedule.length)} ל${student.fullName} (${PLAN_METHODS[p.method as PlanMethod]})`,
-        entity: 'BillingPlan',
-        entityId: p.id,
-        after: { ...p, idempotencyKey, firstCharges: schedule.slice(0, 3) },
-      });
-      return p.id;
-    });
+    const id = await db.$transaction((tx) =>
+      createPlan(deps, tx, input, {
+        idempotencyKey,
+        consentMethod: consent?.method ?? null,
+        actor: actorOf(req),
+        now,
+        userId: req.auth!.user.id,
+      }),
+    );
     return detail(deps, id);
   });
 

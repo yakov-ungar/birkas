@@ -9,7 +9,7 @@ import {
 } from '@tuition/shared';
 import { staff } from '../../plugins/access';
 import { actorOf } from '../../plugins/auth';
-import { AppError, badRequest, conflict, forbidden, notFound, parse } from '../../lib/errors';
+import { badRequest, forbidden, notFound, parse } from '../../lib/errors';
 import { allocate, allocationProblem, type Part } from '../../domain/allocate';
 import { recordAudit } from '../audit/service';
 import { balancesOf } from '../finance/money';
@@ -17,11 +17,8 @@ import { hasPerm, todayOf } from '../finance/context';
 import { cardRow } from '../families/routes';
 import { issueDocument } from '../receipts/service';
 import { autoSendReceipt, openCashSessionId, recordPayment, resultOf } from './service';
+import { payByCard } from './card';
 import type { Deps } from '../../deps';
-import { ProviderError } from '../../providers/payment/types';
-import { isExpiredOn } from '../cards/service';
-
-const paymentDeclined = (msg: string) => new AppError(402, 'payment_declined', msg);
 
 /** Resolves who the payment is for and how it splits between the kids. */
 async function resolveParts(
@@ -171,128 +168,17 @@ export async function paymentRoutes(app: FastifyInstance) {
     // ---------- card ----------
     if (!!d.cardId === !!d.newCard) throw badRequest('יש לבחור כרטיס שמור או להזין כרטיס חדש');
     if (d.newCard?.save && !hasPerm(req, 'cards')) throw forbidden('אין לך הרשאה לשמור כרטיסים');
-    let token: string;
-    let last4: string;
-    let cardId: string | null = null;
-    let newCardToSave: {
-      token: string;
-      last4: string;
-      brand: string;
-      expMonth: number;
-      expYear: number;
-      holderName: string;
-    } | null = null;
-    if (d.cardId) {
-      const c = await db.savedCard.findFirst({
-        where: { id: d.cardId, removedAt: null, student: { familyId } },
-      });
-      if (!c) throw notFound('הכרטיס לא נמצא');
-      if (isExpiredOn(c.expMonth, c.expYear, today)) throw badRequest('הכרטיס פג תוקף, בחר כרטיס אחר');
-      token = deps.enc.decrypt(c.tokenEnc);
-      last4 = c.last4;
-      cardId = c.id;
-    } else {
-      let t;
-      try {
-        t = await deps.payments.finalizeTokenization(d.newCard!);
-      } catch (e) {
-        if (e instanceof ProviderError) throw badRequest(e.message);
-        throw e;
-      }
-      if (isExpiredOn(t.expMonth, t.expYear, today)) throw badRequest('הכרטיס פג תוקף');
-      token = t.token;
-      last4 = t.last4;
-      if (d.newCard!.save) newCardToSave = t;
-    }
-
-    // Written before calling the provider, so a crash mid-call leaves a trace to reconcile.
-    const prior = await db.cardTransaction.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
-    if (prior && prior.status === 'pending') throw conflict('העסקה עדיין בטיפול. בדקו שוב בעוד רגע');
-    if (prior && prior.status !== 'approved') throw paymentDeclined(prior.errorMessageHe ?? 'החיוב נכשל');
-    const txn =
-      prior ??
-      (await db.cardTransaction.create({
-        data: {
-          idempotencyKey: input.idempotencyKey,
-          kind: 'charge',
-          familyId,
-          amountAgorot: input.amountAgorot,
-          cardId,
-          last4,
-          status: 'pending',
-        },
-      }));
-
-    const r = await deps.payments.chargeToken({
-      token,
+    return payByCard(deps, req.log, {
+      familyId,
+      parts,
       amountAgorot: input.amountAgorot,
       idempotencyKey: input.idempotencyKey,
-      description: 'שכר לימוד',
+      cardId: d.cardId,
+      newCard: d.newCard,
+      actor,
+      source: 'staff',
+      createdById: userId,
     });
-    if (r.status !== 'approved') {
-      await db.cardTransaction.update({
-        where: { id: txn.id },
-        data: { status: r.status, errorMessageHe: r.errorMessageHe },
-      });
-      await db.$transaction((tx) =>
-        recordAudit(tx, actor, now, {
-          action: 'payment.card_failed',
-          summary: `חיוב אשראי נכשל ****${last4}: ${r.errorMessageHe}`,
-          entity: 'CardTransaction',
-          entityId: txn.id,
-        }),
-      );
-      throw paymentDeclined(r.errorMessageHe);
-    }
-
-    const result = await db.$transaction(async (tx) => {
-      await tx.cardTransaction.update({
-        where: { id: txn.id },
-        data: { status: 'approved', providerTxnId: r.providerTxnId, approvalCode: r.approvalCode },
-      });
-      if (newCardToSave) {
-        // Saved with the student who receives the largest share (demo: the first part).
-        const studentId = parts[0]!.studentId;
-        const hasDefault = await tx.savedCard.count({
-          where: { studentId, removedAt: null, isDefault: true },
-        });
-        const saved = await tx.savedCard.create({
-          data: {
-            studentId,
-            provider: deps.payments.name,
-            tokenEnc: deps.enc.encrypt(newCardToSave.token),
-            last4: newCardToSave.last4,
-            brand: newCardToSave.brand,
-            expMonth: newCardToSave.expMonth,
-            expYear: newCardToSave.expYear,
-            holderName: newCardToSave.holderName,
-            isDefault: hasDefault === 0,
-          },
-        });
-        await recordAudit(tx, actor, now, {
-          action: 'card.save',
-          summary: `נשמר כרטיס ****${saved.last4}`,
-          entity: 'SavedCard',
-          entityId: saved.id,
-          after: { ...saved, tokenEnc: undefined },
-        });
-      }
-      const { payment } = await recordPayment(tx, now, actor, {
-        familyId,
-        method: 'card',
-        amountAgorot: input.amountAgorot,
-        date: today,
-        reference: `${cardId ? 'כרטיס שמור' : 'כרטיס'} ****${last4}`,
-        parts,
-        idempotencyKey: input.idempotencyKey,
-        source: 'staff',
-        cardTxnId: txn.id,
-        createdById: userId,
-      });
-      return resultOf(tx, payment.id, { approvalCode: r.approvalCode });
-    });
-    if (result.receipt) await autoSendReceipt(deps, req.log, familyId, result.receipt.id);
-    return result;
   });
 
   /** Refund of a credit balance (cash or transfer only; card refunds go through receipt cancellation, A8). */

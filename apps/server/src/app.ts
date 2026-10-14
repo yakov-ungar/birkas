@@ -31,6 +31,10 @@ import { checkRoutes } from './modules/checks/routes';
 import { cashRoutes } from './modules/cash/routes';
 import { bankRoutes } from './modules/bank/routes';
 import { messageRoutes } from './modules/messages/routes';
+import { portalAuthRoutes } from './modules/portal/auth-routes';
+import { portalRoutes } from './modules/portal/routes';
+import { requestRoutes } from './modules/requests/routes';
+import { registerParentAuth } from './plugins/parent';
 import { bodyContainsPan } from './lib/redact';
 import { AppError } from './lib/errors';
 import { fileURLToPath } from 'node:url';
@@ -102,6 +106,7 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
 
   app.setErrorHandler(errorHandler);
   registerAuth(app);
+  registerParentAuth(app);
 
   // Defense in depth: no request may carry something that looks like a full card number.
   app.addHook('preValidation', async (req) => {
@@ -146,6 +151,9 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
   await app.register(cashRoutes);
   await app.register(bankRoutes);
   await app.register(messageRoutes);
+  await app.register(portalAuthRoutes);
+  await app.register(portalRoutes);
+  await app.register(requestRoutes);
   if (config.ENABLE_TEST_ROUTES) await app.register(testRoutes);
 
   if (config.PAYMENT_PROVIDER === 'mock') {

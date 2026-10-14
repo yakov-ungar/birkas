@@ -3,12 +3,11 @@ import { z } from 'zod';
 import { cardCreateSchema } from '@tuition/shared';
 import { staff } from '../../plugins/access';
 import { actorOf } from '../../plugins/auth';
-import { badRequest, conflict, notFound, parse } from '../../lib/errors';
+import { conflict, notFound, parse } from '../../lib/errors';
 import { recordAudit } from '../audit/service';
 import { cardRow } from '../families/routes';
 import { todayOf } from '../finance/context';
-import { ProviderError } from '../../providers/payment/types';
-import { isExpiredOn, linkedPlanCounts } from './service';
+import { linkedPlanCounts, saveCard } from './service';
 
 const idParam = z.object({ id: z.string().min(1).max(40) });
 
@@ -38,38 +37,8 @@ export async function cardRoutes(app: FastifyInstance) {
     const { studentId, card } = parse(cardCreateSchema, req.body);
     const s = await db.student.findFirst({ where: { id: studentId, deletedAt: null } });
     if (!s) throw notFound('התלמיד לא נמצא');
-    let t;
-    try {
-      t = await deps.payments.finalizeTokenization(card);
-    } catch (e) {
-      if (e instanceof ProviderError) throw badRequest(e.message);
-      throw e;
-    }
-    if (isExpiredOn(t.expMonth, t.expYear, todayOf(deps))) throw badRequest('הכרטיס פג תוקף');
-    return db.$transaction(async (tx) => {
-      const hasDefault = await tx.savedCard.count({ where: { studentId, removedAt: null, isDefault: true } });
-      const c = await tx.savedCard.create({
-        data: {
-          studentId,
-          provider: deps.payments.name,
-          tokenEnc: deps.enc.encrypt(t.token),
-          last4: t.last4,
-          brand: t.brand,
-          expMonth: t.expMonth,
-          expYear: t.expYear,
-          holderName: t.holderName,
-          isDefault: hasDefault === 0,
-        },
-      });
-      await recordAudit(tx, actorOf(req), clock.now(), {
-        action: 'card.save',
-        summary: `נשמר כרטיס ****${c.last4} לתלמיד ${s.fullName}`,
-        entity: 'SavedCard',
-        entityId: c.id,
-        after: { ...c, tokenEnc: undefined },
-      });
-      return { card: cardRow(c, s.fullName, todayOf(deps)) };
-    });
+    const c = await saveCard(deps, { studentId, card, actor: actorOf(req) });
+    return { card: cardRow(c, s.fullName, todayOf(deps)) };
   });
 
   app.post('/api/cards/:id/default', { config: { access: staff('cards') } }, async (req) => {

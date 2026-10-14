@@ -23,11 +23,11 @@ const LOCK_MINUTES = 15;
 const RECOVERY_CODES = 10;
 const GENERIC_FAIL = 'אימייל או סיסמה שגויים';
 
-const loginLimit = { max: 10, timeWindow: '15 minutes' };
 
 export async function authRoutes(app: FastifyInstance) {
   const deps = app.deps;
   const { db, clock } = deps;
+  const loginLimit = { max: deps.config.LOGIN_RATE_LIMIT, timeWindow: '15 minutes' };
 
   const event = (userId: string | null, ev: string, req: { ip: string; headers: Record<string, unknown> }) =>
     db.loginEvent.create({

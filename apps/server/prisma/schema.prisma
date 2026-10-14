@@ -614,3 +614,73 @@ model Message {
   @@index([status, notBefore])
   @@index([familyId, ruleKey])
 }
+
+// ---------- stage 6: parent portal (decision C15) ----------
+
+/// One-time sign-in code sent by SMS or email. Only an HMAC of the code is stored.
+model ParentOtp {
+  id        String    @id @default(cuid())
+  familyId  String
+  /// sms | email
+  channel   String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  ip        String?
+  createdAt DateTime
+
+  @@index([familyId, createdAt])
+}
+
+/// A signed-in parent. The family comes only from here, never from the request.
+model ParentSession {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  familyId   String
+  csrfToken  String
+  createdAt  DateTime
+  lastSeenAt DateTime
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+
+  @@index([familyId])
+}
+
+/// "Remember this device" for 30 days: lets the parent back in after an idle timeout without a new code.
+model ParentDevice {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  familyId   String
+  createdAt  DateTime
+  lastUsedAt DateTime
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  @@index([familyId])
+}
+
+/// Requests parents send from the portal: installments, discount, contact details update.
+model ParentRequest {
+  id            String    @id @default(cuid())
+  familyId      String
+  /// installments | discount | contact
+  type          String
+  /// JSON, shape per type (packages/shared stage6.ts).
+  details       String
+  note          String    @default("")
+  /// pending | approved | rejected
+  status        String    @default("pending")
+  createdAt     DateTime
+  decidedAt     DateTime?
+  decidedById   String?
+  decidedByName String?
+  rejectReason  String?
+  /// Short Hebrew summary of what the approval created.
+  resultSummary String?
+
+  @@index([status])
+  @@index([familyId, createdAt])
+}

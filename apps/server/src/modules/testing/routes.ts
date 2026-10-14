@@ -21,6 +21,13 @@ export async function testRoutes(app: FastifyInstance) {
     };
   });
 
+  /** Texts the mock SMS gateway sent (in memory). Used to read portal sign-in codes in tests. */
+  app.get('/api/test/texts', { config: { access: TEST_ONLY } }, async (req) => {
+    const { to } = parse(z.object({ to: z.string().optional() }), req.query);
+    const sms = app.deps.texts.sms as { sent?: { to: string; body: string }[] };
+    return { texts: (sms.sent ?? []).filter((t) => !to || t.to === to) };
+  });
+
   /** Scans every table for a string (used to prove card numbers never reach the database). */
   app.get('/api/test/scan', { config: { access: TEST_ONLY } }, async (req) => {
     const { needle } = parse(z.object({ needle: z.string().min(4) }), req.query);

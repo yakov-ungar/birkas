@@ -7,9 +7,13 @@ export interface TextChannel {
 }
 
 export class MockTextChannel implements TextChannel {
+  /** Recent sends, kept in memory only so tests can read them (test routes). Never persisted. */
+  readonly sent: { to: string; body: string }[] = [];
   constructor(readonly name: 'sms' | 'whatsapp') {}
-  async send(to: string) {
+  async send(to: string, body: string) {
     if (!/^0\d{8,9}$/.test(to)) return { ok: false as const, error: 'מספר טלפון לא תקין' };
+    this.sent.unshift({ to, body });
+    this.sent.length = Math.min(this.sent.length, 50);
     return { ok: true as const, ref: `mock_${this.name}_${randomBytes(6).toString('hex')}` };
   }
 }

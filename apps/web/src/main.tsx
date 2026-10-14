@@ -29,6 +29,9 @@ import { ChecksPage } from './pages/checks/ChecksPage';
 import { BankPage } from './pages/bank/BankPage';
 import { CollectionPage } from './pages/collection/CollectionPage';
 import { HttpError } from './api/client';
+import { PortalApp } from './pages/portal/PortalApp';
+import { RequestsPage } from './pages/requests/RequestsPage';
+import { PortalPreviewPage } from './pages/portal/PortalPreviewPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,52 +54,63 @@ const BUILT: Record<string, JSX.Element> = {
   '/checks': <ChecksPage />,
   '/bank': <BankPage />,
   '/collection': <CollectionPage />,
+  '/requests': <RequestsPage />,
+  '/portal-preview': <PortalPreviewPage />,
 };
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/login/2fa" element={<TwoFactorPage />} />
-              <Route path="/login/setup-2fa" element={<SetupTwoFactorPage />} />
-              <Route path="/invite" element={<InvitePage />} />
-              <Route
-                element={
-                  <RequireStaff>
-                    <DialogProvider>
-                      <Layout />
-                    </DialogProvider>
-                  </RequireStaff>
-                }
-              >
-                {NAV.map((n) => (
+const root = createRoot(document.getElementById('root')!);
+// The parent portal is a separate app: no staff session, provider or menu is loaded for parents.
+if (/^\/portal(\/|$)/.test(window.location.pathname)) {
+  root.render(
+    <StrictMode>
+      <PortalApp />
+    </StrictMode>,
+  );
+} else
+  root.render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/login/2fa" element={<TwoFactorPage />} />
+                <Route path="/login/setup-2fa" element={<SetupTwoFactorPage />} />
+                <Route path="/invite" element={<InvitePage />} />
+                <Route
+                  element={
+                    <RequireStaff>
+                      <DialogProvider>
+                        <Layout />
+                      </DialogProvider>
+                    </RequireStaff>
+                  }
+                >
+                  {NAV.map((n) => (
+                    <Route
+                      key={n.path}
+                      path={n.path}
+                      element={
+                        <RequirePerm perm={n.perm}>
+                          {BUILT[n.path] ?? <Placeholder title={n.label} stage={n.stage} />}
+                        </RequirePerm>
+                      }
+                    />
+                  ))}
                   <Route
-                    key={n.path}
-                    path={n.path}
+                    path="*"
                     element={
-                      <RequirePerm perm={n.perm}>
-                        {BUILT[n.path] ?? <Placeholder title={n.label} stage={n.stage} />}
-                      </RequirePerm>
+                      <div className="card placeholder">
+                        <h2>הדף לא נמצא</h2>
+                      </div>
                     }
                   />
-                ))}
-                <Route
-                  path="*"
-                  element={
-                    <div className="card placeholder">
-                      <h2>הדף לא נמצא</h2>
-                    </div>
-                  }
-                />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </ToastProvider>
-    </QueryClientProvider>
-  </StrictMode>,
-);
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </StrictMode>,
+  );

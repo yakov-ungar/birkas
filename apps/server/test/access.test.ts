@@ -32,6 +32,17 @@ describe('route access', () => {
     }
   });
 
+  it('every parent route returns 401 without a parent session, even with a staff session', async () => {
+    const parentRoutes = ctx.app.routeList.filter((x) => x.access.type === 'parent');
+    expect(parentRoutes.length).toBeGreaterThan(4);
+    const { agent } = await signedIn(ctx);
+    for (const a of [new Agent(ctx.app), agent])
+      for (const r of parentRoutes) {
+        const res = await a.req(r.method, fill(r.url), r.method === 'GET' ? undefined : {});
+        expect(res.statusCode, `${r.method} ${r.url}`).toBe(401);
+      }
+  });
+
   it('every permission-protected route returns 403 to a user lacking the permissions that unlock it', async () => {
     const protectedRoutes = ctx.app.routeList.filter((x) => permsOf(x.access).length);
     expect(protectedRoutes.length).toBeGreaterThan(30);

@@ -8,7 +8,6 @@ import {
   discountCreateSchema,
   formatMoney,
   normalizeGrade,
-  percentOf,
   reasonSchema,
   type ChargeRow,
   type ChargeType,
@@ -19,8 +18,8 @@ import { badRequest, conflict, notFound, parse } from '../../lib/errors';
 import { recordAudit } from '../audit/service';
 import { getSettings } from '../settings/service';
 import { addCharge, recalcSiblings, reverseCharge } from '../finance/charges';
-import { tuitionOf } from '../finance/money';
 import { todayOf } from '../finance/context';
+import { createDiscount } from '../finance/discount';
 import type { Db, Tx } from '../../lib/db';
 
 const idParam = z.object({ id: z.string().min(1).max(40) });
@@ -172,42 +171,14 @@ export async function chargeRoutes(app: FastifyInstance) {
     const now = clock.now();
     const today = todayOf(deps);
     return db.$transaction(async (tx) => {
-      const s = await tx.student.findFirst({ where: { id: input.studentId, deletedAt: null } });
-      if (!s) throw notFound('התלמיד לא נמצא');
-      const tuition = await tuitionOf(tx, s.id, settings.activeYearName);
-      if (tuition <= 0) throw badRequest('לתלמיד אין שכר לימוד לשנה הנוכחית');
-      let amount: number;
-      if (input.kind === 'pct') {
-        if (input.value > 100) throw badRequest('אחוז הנחה עד 100', { value: 'אחוז הנחה עד 100' });
-        if (Math.round(input.value * 100) !== input.value * 100) throw badRequest('עד שתי ספרות אחרי הנקודה');
-        amount = percentOf(tuition, input.value);
-      } else {
-        if (!Number.isSafeInteger(input.value)) throw badRequest('סכום לא תקין');
-        amount = input.value;
-      }
-      if (amount <= 0) throw badRequest('ההנחה יוצאת אפס אחרי עיגול');
-      if (amount > tuition) throw badRequest('ההנחה גדולה משכר הלימוד', { value: 'ההנחה גדולה משכר הלימוד' });
-      // The internal note is kept apart from the description, which parents see on statements.
-      const description = `${input.reason}${input.kind === 'pct' ? ` (${input.value}%)` : ''}`;
-      const c = await addCharge(tx, {
-        studentId: s.id,
-        type: 'disc',
-        description,
-        amountAgorot: -amount,
-        date: today,
+      const r = await createDiscount(tx, input, {
+        actor: actorOf(req),
+        now,
+        today,
         yearName: settings.activeYearName,
-        reason: input.reason,
-        internalNote: input.note || null,
         createdById: req.auth!.user.id,
       });
-      await recordAudit(tx, actorOf(req), now, {
-        action: 'charge.discount',
-        summary: `הנחה ${formatMoney(amount)} ל${s.fullName}: ${input.reason}`,
-        entity: 'Charge',
-        entityId: c.id,
-        after: c,
-      });
-      return { chargeId: c.id, amountAgorot: amount };
+      return { chargeId: r.chargeId, amountAgorot: r.amountAgorot };
     });
   });
 

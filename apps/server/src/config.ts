@@ -28,6 +28,8 @@ const envSchema = z
     ALERT_EMAIL: z.string().email().optional(),
     /** Run the in-process scheduler (nightly charges). Off in tests. */
     SCHEDULER_ENABLED: bool.default('true'),
+    /** Sign-in attempts per IP per 15 minutes (staff login and 2FA). Raised only for the browser tests. */
+    LOGIN_RATE_LIMIT: z.coerce.number().int().min(1).max(1000).default(10),
     /** Test-only time travel and helper routes. Refused in production. */
     ENABLE_TEST_ROUTES: bool.default('false'),
   })

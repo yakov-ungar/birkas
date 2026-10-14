@@ -161,8 +161,8 @@ describe('reminder rules', () => {
       status: 'queued',
       ruleKey: 'charge_failed',
     });
-    expect(m[0]!.body).toBe(
-      'שלום דוד כהן, החיוב עבור יוסף לא עבר (סירוב חברת האשראי). אנא עדכנו כרטיס: http://localhost:5173/portal',
+    expect(m[0]!.body).toMatch(
+      /^שלום דוד כהן, החיוב עבור יוסף לא עבר \(סירוב חברת האשראי\)\. אנא עדכנו כרטיס: http:\/\/localhost:5173\/portal\?t=\S+$/,
     );
     expect(m[0]!.notBefore.toISOString()).toBe(il('2026-10-15T08:00:00').toISOString());
     await dispatch(ctx.deps);
@@ -217,7 +217,9 @@ describe('reminder rules', () => {
     });
     expect((await a.req('POST', '/api/messages/rules/debt_30/run')).json().queued).toBe(1);
     const mail = await ctx.deps.db.outbox.findFirstOrThrow({ where: { to: 'cohen@example.com' } });
-    expect(mail.text).toBe('שלום דוד כהן, קיימת יתרה פתוחה של ₪9,650. לתשלום: http://localhost:5173/portal');
+    expect(mail.text).toMatch(
+      /^שלום דוד כהן, קיימת יתרה פתוחה של ₪9,650\. לתשלום: http:\/\/localhost:5173\/portal\?t=\S+$/,
+    );
     await jump(il('2026-10-24T10:00:00'));
     expect((await a.req('POST', '/api/messages/rules/debt_30/run')).json().queued).toBe(0);
     await jump(il('2026-10-29T10:00:00'));
@@ -311,7 +313,9 @@ describe('group messages and history', () => {
     expect((await messages())[0]).toMatchObject({
       channel: 'sms',
       status: 'sent',
-      body: 'שלום דוד כהן, דף חשבון נכון ל-14/10/2026: יתרה לתשלום ₪9,600. לצפייה ותשלום: http://localhost:5173/portal',
+      body: expect.stringMatching(
+        /^שלום דוד כהן, דף חשבון נכון ל-14\/10\/2026: יתרה לתשלום ₪9,600\. לצפייה ותשלום: http:\/\/localhost:5173\/portal\?t=\S+$/,
+      ),
     });
     expect(
       (await a.req('POST', `/api/families/${f.familyId}/statement/send`, { channel: 'email' })).statusCode,

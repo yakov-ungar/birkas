@@ -11,4 +11,5 @@ export * from './schemas-plans';
 export * from './plan-types';
 export * from './stage4';
 export * from './stage5';
+export * from './stage6';
 export { hebrewErrorMap } from './zod-he';

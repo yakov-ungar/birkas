@@ -47,7 +47,8 @@ export function registerAuth(app: FastifyInstance) {
     const url = req.url;
     if (!url.startsWith('/api/') || req.is404) return;
     if (!access) throw new AppError(500, 'internal', 'route without access declaration');
-    if (access.type === 'public') return;
+    // Parent routes are authenticated by plugins/parent.ts with the parent cookie only.
+    if (access.type === 'public' || access.type === 'parent') return;
     if (access.type === 'test') {
       if (!app.deps.config.ENABLE_TEST_ROUTES || app.deps.config.NODE_ENV === 'production')
         throw unauthorized();

@@ -8,6 +8,7 @@ import { nextAllowed, isQuiet } from '../../domain/quiet-hours';
 import { addAging, type AgingBuckets } from '../../domain/ledger';
 import { EMPTY, loadMoney, summarize } from '../finance/money';
 import { emailDocument } from '../receipts/service';
+import { signPortalLink } from '../portal/session';
 
 export type Channel = 'sms' | 'whatsapp' | 'email';
 export const CHANNEL_LABEL: Record<Channel, string> = { sms: 'SMS', whatsapp: 'וואטסאפ', email: 'מייל' };
@@ -16,8 +17,9 @@ export type RuleKey = 'pre_charge' | 'charge_failed' | 'debt_30' | 'receipt_auto
 /** Decision C13: the debt reminder goes to a family at most once in this many days. */
 export const DEBT_REMINDER_EVERY_DAYS = 14;
 
-/** Parent portal entry point (stage 6 turns this into a signed, time-limited link; decision C15). */
-export const portalLink = (deps: Deps) => `${deps.config.APP_BASE_URL}/portal`;
+/** Signed, time-limited link to the parent portal sign-in (decision C15). It still requires a one-time code. */
+export const portalLink = (deps: Deps, familyId: string) =>
+  `${deps.config.APP_BASE_URL}/portal?t=${encodeURIComponent(signPortalLink(deps, familyId, deps.clock.now()))}`;
 
 export async function familyVars(
   deps: Deps,
@@ -43,7 +45,7 @@ export async function familyVars(
     משפחה: f.name,
     תלמיד: f.students.map((s) => s.fullName.split(' ')[0]).join(', '),
     יתרה: formatMoney(balance),
-    קישור: portalLink(deps),
+    קישור: portalLink(deps, familyId),
     ...extra,
   };
 }

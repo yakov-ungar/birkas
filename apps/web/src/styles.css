@@ -488,3 +488,58 @@ code,
   font-size: 0.8rem;
   margin-inline-start: 4px;
 }
+
+/* ---------- parent portal (demo .phone) ---------- */
+.phone {
+  max-width: 430px;
+  margin: 0 auto;
+  border: 8px solid #14262e;
+  border-radius: 28px;
+  background: #fff;
+  overflow: hidden;
+}
+.portal-page .phone {
+  margin: 16px auto;
+}
+@media (max-width: 480px) {
+  .portal-page .phone {
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+    min-height: 100vh;
+  }
+}
+.ph-h {
+  background: var(--main);
+  color: #fff;
+  padding: 14px 16px;
+  text-align: center;
+}
+.ph-b {
+  padding: 14px 16px;
+}
+.bigbal {
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 8px 0;
+}
+.bigbal b {
+  display: block;
+  font-size: 2rem;
+}
+.pk {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+.pbtn {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}

@@ -167,7 +167,8 @@ describe('billing plans', () => {
     expect((await card(a, f.studentId)).balanceAgorot).toBe(960000 - 100000);
 
     // Next month the second installment is due.
-    ctx.deps.clock.advance(31 * 86_400_000); // (the staff session times out; check the database directly)
+    // 32 days, so the result never depends on the hour of day or a daylight-saving change.
+    ctx.deps.clock.advance(32 * 86_400_000); // (the staff session times out; check the database directly)
     expect((await run()).ok).toBe(1);
     expect(await ctx.deps.db.planCharge.count({ where: { planId: p.id, status: 'paid' } })).toBe(2);
   });

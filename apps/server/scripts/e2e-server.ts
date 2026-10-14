@@ -30,6 +30,8 @@ const env = {
   APP_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
   APP_BASE_URL: `http://127.0.0.1:${port}`,
   ENABLE_TEST_ROUTES: 'true',
+  // All browser tests sign in from 127.0.0.1.
+  LOGIN_RATE_LIMIT: '100',
   WEB_DIST: resolve(here, '../../web/dist'),
   LOG_LEVEL: 'info',
 };

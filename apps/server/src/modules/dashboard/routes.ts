@@ -81,6 +81,10 @@ export async function alertsFor(deps: Deps, req: FastifyRequest): Promise<AlertI
     const pending = await db.bankTransaction.count({ where: { status: 'pending' } });
     if (pending) out.push({ level: 'info', text: `${pending} תנועות בנק ממתינות לאישור`, path: '/bank' });
   }
+  if (hasPerm(req, 'req')) {
+    const rq = await db.parentRequest.count({ where: { status: 'pending' } });
+    if (rq) out.push({ level: 'info', text: `${rq} בקשות הורים ממתינות לטיפול`, path: '/requests' });
+  }
   if (hasPerm(req, 'checks')) {
     const open = await db.cashSession.findFirst({ where: { closedAt: null } });
     const n = open ? await db.payment.count({ where: { cashSessionId: open.id } }) : 0;

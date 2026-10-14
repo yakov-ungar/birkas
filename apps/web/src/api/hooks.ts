@@ -54,6 +54,9 @@ const MONEY_KEYS = [
   'debtors',
   'rules',
   'history',
+  'requests',
+  'request-approval',
+  'portal-preview',
 ];
 
 /** After any money change: every list and card may show different balances. */
