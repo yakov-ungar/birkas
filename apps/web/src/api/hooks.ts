@@ -57,6 +57,8 @@ const MONEY_KEYS = [
   'requests',
   'request-approval',
   'portal-preview',
+  'report',
+  'year',
 ];
 
 /** After any money change: every list and card may show different balances. */

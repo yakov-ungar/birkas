@@ -684,3 +684,19 @@ model ParentRequest {
   @@index([status])
   @@index([familyId, createdAt])
 }
+
+// ---------- stage 7 ----------
+
+/// Connection settings for the six external services (demo "חיבורים"). Credentials are AES-256-GCM
+/// encrypted in `configEnc` and never returned to the browser.
+model Integration {
+  key           String    @id
+  connected     Boolean   @default(false)
+  /// test | live. Live stays closed until a real provider is chosen (plan stage 9).
+  mode          String    @default("test")
+  configEnc     String?
+  /// Non-secret summary shown in the list.
+  details       String    @default("")
+  updatedAt     DateTime?
+  updatedByName String?
+}

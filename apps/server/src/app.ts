@@ -34,6 +34,8 @@ import { messageRoutes } from './modules/messages/routes';
 import { portalAuthRoutes } from './modules/portal/auth-routes';
 import { portalRoutes } from './modules/portal/routes';
 import { requestRoutes } from './modules/requests/routes';
+import { reportRoutes } from './modules/reports/routes';
+import { settingsAdminRoutes } from './modules/settings/admin-routes';
 import { registerParentAuth } from './plugins/parent';
 import { bodyContainsPan } from './lib/redact';
 import { AppError } from './lib/errors';
@@ -154,6 +156,8 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
   await app.register(portalAuthRoutes);
   await app.register(portalRoutes);
   await app.register(requestRoutes);
+  await app.register(reportRoutes);
+  await app.register(settingsAdminRoutes);
   if (config.ENABLE_TEST_ROUTES) await app.register(testRoutes);
 
   if (config.PAYMENT_PROVIDER === 'mock') {

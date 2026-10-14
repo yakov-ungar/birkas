@@ -28,6 +28,10 @@ const SECRET_KEYS = new Set([
   'csrfToken',
   'token',
   'password',
+  'secret',
+  'configEnc',
+  'tokenEnc',
+  'accountEnc',
 ]);
 
 export function snapshot(v: unknown): string | null {

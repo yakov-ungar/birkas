@@ -8,6 +8,7 @@ import { Modal } from '../../components/Modal';
 import { Tabs } from '../../components/Tabs';
 import { useToast } from '../../components/Toast';
 import { fmtDateTime } from '../../components/format';
+import { GeneralModal, Integrations, SchoolYear } from './SettingsTabs';
 
 const shekel = (agorot: number) => `₪${(agorot / 100).toLocaleString('he-IL')}`;
 
@@ -27,28 +28,17 @@ export function SettingsPage() {
         onChange={setTab}
         tabs={[
           { id: 'gen', label: 'כללי', content: s ? <General s={s} /> : <p className="mu">טוען...</p> },
-          {
-            id: 'int',
-            label: 'חיבורים',
-            content: <Later what="מסך החיבורים (סליקה, בנק, SMS, וואטסאפ, מייל, הנהלת חשבונות)" />,
-          },
+          { id: 'int', label: 'חיבורים', content: <Integrations /> },
           { id: 'sec', label: 'אבטחה', content: s ? <Security s={s} /> : <p className="mu">טוען...</p> },
-          { id: 'yr', label: 'שנת לימודים', content: <Later what="פתיחת שנת לימודים חדשה" /> },
+          { id: 'yr', label: 'שנת לימודים', content: <SchoolYear /> },
         ]}
       />
     </>
   );
 }
 
-function Later({ what }: { what: string }) {
-  return (
-    <div className="card placeholder">
-      <p>{what} ייבנה בשלב 7.</p>
-    </div>
-  );
-}
-
 function General({ s }: { s: AllSettings }) {
+  const [editing, setEditing] = useState(false);
   const rows: [string, string][] = [
     ['שם בית הספר', s.schoolName],
     ['שנת לימודים פעילה', s.activeYearName],
@@ -69,7 +59,12 @@ function General({ s }: { s: AllSettings }) {
           ))}
         </tbody>
       </table>
-      <p className="mu">עריכת ההגדרות הכלליות תיפתח בשלב 7.</p>
+      <div className="row" style={{ marginTop: 12 }}>
+        <button className="b" type="button" onClick={() => setEditing(true)}>
+          עריכת הגדרות
+        </button>
+      </div>
+      {editing && <GeneralModal s={s} onClose={() => setEditing(false)} />}
     </div>
   );
 }

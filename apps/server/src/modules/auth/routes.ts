@@ -23,7 +23,6 @@ const LOCK_MINUTES = 15;
 const RECOVERY_CODES = 10;
 const GENERIC_FAIL = 'אימייל או סיסמה שגויים';
 
-
 export async function authRoutes(app: FastifyInstance) {
   const deps = app.deps;
   const { db, clock } = deps;

@@ -32,6 +32,7 @@ import { HttpError } from './api/client';
 import { PortalApp } from './pages/portal/PortalApp';
 import { RequestsPage } from './pages/requests/RequestsPage';
 import { PortalPreviewPage } from './pages/portal/PortalPreviewPage';
+import { ReportsPage } from './pages/reports/ReportsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ const BUILT: Record<string, JSX.Element> = {
   '/collection': <CollectionPage />,
   '/requests': <RequestsPage />,
   '/portal-preview': <PortalPreviewPage />,
+  '/reports': <ReportsPage />,
 };
 
 const root = createRoot(document.getElementById('root')!);
