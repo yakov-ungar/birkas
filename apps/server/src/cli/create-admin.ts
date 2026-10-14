@@ -7,9 +7,8 @@ import { parseArgs } from 'node:util';
 import { ALL_PERMISSIONS } from '@tuition/shared';
 import { loadConfig } from '../config';
 import { systemClock } from '../lib/clock';
-import { Encryptor } from '../lib/crypto';
 import { createDb } from '../lib/db';
-import { createMailer } from '../lib/mailer';
+import { createDeps } from '../deps';
 import { SYSTEM_ACTOR, recordAudit } from '../modules/audit/service';
 import { issueInvite } from '../modules/users/routes';
 
@@ -20,13 +19,7 @@ if (!values.name || !values.email) {
 }
 const config = loadConfig();
 const db = await createDb(config.DATABASE_URL);
-const deps = {
-  config,
-  db,
-  clock: systemClock,
-  mailer: createMailer(db, config),
-  enc: new Encryptor(config.APP_ENCRYPTION_KEY),
-};
+const deps = createDeps(config, db, systemClock);
 const email = values.email.trim().toLowerCase();
 
 if (await db.user.findUnique({ where: { email } })) {

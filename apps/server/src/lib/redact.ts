@@ -44,3 +44,16 @@ export const REDACT_PATHS = [
   '*.cardNumber',
   '*.secret',
 ];
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Fields that are machine-generated or binary and cannot hold a typed card number. */
+const SKIP_KEYS = new Set(['idempotencyKey', 'contentBase64']);
+
+/** Walks a parsed JSON body and reports whether any user-entered string looks like a card number. */
+export function bodyContainsPan(v: unknown, key = ''): boolean {
+  if (typeof v === 'string') return !SKIP_KEYS.has(key) && !UUID.test(v) && containsPan(v);
+  if (typeof v === 'number') return Number.isSafeInteger(v) && containsPan(String(v));
+  if (Array.isArray(v)) return v.some((x) => bodyContainsPan(x, key));
+  if (v && typeof v === 'object') return Object.entries(v).some(([k, x]) => bodyContainsPan(x, k));
+  return false;
+}

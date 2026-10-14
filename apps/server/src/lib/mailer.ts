@@ -7,6 +7,7 @@ export interface Mail {
   subject: string;
   text: string;
   html?: string;
+  attachments?: { filename: string; content: Buffer; contentType?: string }[];
 }
 
 export interface Mailer {
@@ -19,7 +20,14 @@ export function createMailer(db: Db, config: Config): Mailer {
     config.MAIL_TRANSPORT === 'smtp' && config.SMTP_URL ? nodemailer.createTransport(config.SMTP_URL) : null;
   return {
     async send(mail) {
-      const row = await db.outbox.create({ data: { ...mail, html: mail.html ?? null } });
+      const { attachments, ...rest } = mail;
+      const row = await db.outbox.create({
+        data: {
+          ...rest,
+          html: mail.html ?? null,
+          attachmentNames: attachments?.length ? JSON.stringify(attachments.map((a) => a.filename)) : null,
+        },
+      });
       if (!transport) return;
       try {
         await transport.sendMail({ from: config.MAIL_FROM, ...mail });

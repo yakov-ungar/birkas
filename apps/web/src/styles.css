@@ -132,7 +132,7 @@ h4 {
   display: block;
   font-size: 1.3rem;
 }
-.kpi span {
+.kpi > span {
   color: var(--mute);
   font-size: 0.88rem;
 }

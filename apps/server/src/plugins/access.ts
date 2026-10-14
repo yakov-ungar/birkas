@@ -8,12 +8,20 @@ import type { Permission, SessionStage } from '@tuition/shared';
 export type Access =
   | { type: 'public' }
   | { type: 'test' }
-  | { type: 'session'; stages: SessionStage[]; permission?: Permission };
+  /** permission: one key, or several meaning "any of". */
+  | { type: 'session'; stages: SessionStage[]; permission?: Permission | Permission[] };
 
 export const PUBLIC: Access = { type: 'public' };
 export const TEST_ONLY: Access = { type: 'test' };
 /** Fully signed-in staff (password + 2FA where required), optionally with a permission. */
-export const staff = (permission?: Permission): Access => ({ type: 'session', stages: ['full'], permission });
+export const staff = (permission?: Permission | Permission[]): Access => ({
+  type: 'session',
+  stages: ['full'],
+  permission,
+});
+
+export const permsOf = (a: Access): Permission[] =>
+  a.type === 'session' && a.permission ? [a.permission].flat() : [];
 /** Signed in with password but 2FA not completed yet. */
 export const preAuth = (...stages: SessionStage[]): Access => ({ type: 'session', stages });
 

@@ -16,6 +16,17 @@ import { userRoutes } from './modules/users/routes';
 import { auditRoutes } from './modules/audit/routes';
 import { settingsRoutes } from './modules/settings/routes';
 import { testRoutes } from './modules/testing/routes';
+import { familyRoutes } from './modules/families/routes';
+import { statementRoutes } from './modules/families/statement';
+import { importRoutes } from './modules/families/import';
+import { chargeRoutes } from './modules/charges/routes';
+import { paymentRoutes } from './modules/payments/routes';
+import { receiptRoutes } from './modules/receipts/routes';
+import { searchRoutes } from './modules/search/routes';
+import { bodyContainsPan } from './lib/redact';
+import { AppError } from './lib/errors';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 
 export interface RouteInfo {
   method: string;
@@ -71,6 +82,7 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],
+        frameSrc: ["'self'"],
         frameAncestors: ["'none'"],
       },
     },
@@ -82,6 +94,18 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
 
   app.setErrorHandler(errorHandler);
   registerAuth(app);
+
+  // Defense in depth: no request may carry something that looks like a full card number.
+  app.addHook('preValidation', async (req) => {
+    if (!req.url.startsWith('/api/') || req.body === undefined || req.body === null) return;
+    if (bodyContainsPan(req.body)) {
+      throw new AppError(
+        400,
+        'card_number_rejected',
+        'אין לשלוח מספר כרטיס אשראי למערכת. יש להזין כרטיס רק בשדות המאובטחים של חברת הסליקה',
+      );
+    }
+  });
 
   app.addHook('onSend', async (req, reply) => {
     if (req.url.startsWith('/api/')) reply.header('cache-control', 'no-store');
@@ -100,7 +124,38 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
   await app.register(userRoutes);
   await app.register(auditRoutes);
   await app.register(settingsRoutes);
+  await app.register(familyRoutes);
+  await app.register(statementRoutes);
+  await app.register(importRoutes);
+  await app.register(chargeRoutes);
+  await app.register(paymentRoutes);
+  await app.register(receiptRoutes);
+  await app.register(searchRoutes);
   if (config.ENABLE_TEST_ROUTES) await app.register(testRoutes);
+
+  if (config.PAYMENT_PROVIDER === 'mock') {
+    // The mock acquirer's hosted fields. A real provider serves these from its own domain.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const mockDir = [join(here, '../assets/mock-provider'), join(here, '../../assets/mock-provider')].find(
+      (d) => existsSync(join(d, 'fields.html')),
+    );
+    if (mockDir) {
+      await app.register(async (scope) => {
+        scope.addHook('onSend', async (_req, reply) => {
+          reply.header(
+            'content-security-policy',
+            "default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'self'; form-action 'none'",
+          );
+          reply.header('x-frame-options', 'SAMEORIGIN');
+        });
+        await scope.register(fastifyStatic, {
+          root: mockDir,
+          prefix: '/mock-provider/',
+          decorateReply: false,
+        });
+      });
+    }
+  }
 
   const webDist = config.WEB_DIST ? resolve(config.WEB_DIST) : null;
   if (webDist && existsSync(join(webDist, 'index.html'))) {

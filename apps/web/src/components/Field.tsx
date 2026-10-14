@@ -7,15 +7,15 @@ export function Field({
 }: { label: string; error?: string } & InputHTMLAttributes<HTMLInputElement>) {
   const id = useId();
   return (
-    <label className="field" htmlFor={id}>
-      {label}
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
       <input id={id} aria-invalid={!!error} aria-describedby={error ? `${id}-e` : undefined} {...props} />
       {error && (
         <span className="field-err" id={`${id}-e`}>
           {error}
         </span>
       )}
-    </label>
+    </div>
   );
 }
 
@@ -27,13 +27,17 @@ export function SelectField({
 }: { label: string; error?: string; children: ReactNode } & SelectHTMLAttributes<HTMLSelectElement>) {
   const id = useId();
   return (
-    <label className="field" htmlFor={id}>
-      {label}
-      <select id={id} aria-invalid={!!error} {...props}>
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <select id={id} aria-invalid={!!error} aria-describedby={error ? `${id}-e` : undefined} {...props}>
         {children}
       </select>
-      {error && <span className="field-err">{error}</span>}
-    </label>
+      {error && (
+        <span className="field-err" id={`${id}-e`}>
+          {error}
+        </span>
+      )}
+    </div>
   );
 }
 

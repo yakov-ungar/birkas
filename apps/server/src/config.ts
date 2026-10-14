@@ -20,6 +20,10 @@ const envSchema = z
     MAIL_TRANSPORT: z.enum(['outbox', 'smtp']).default('outbox'),
     SMTP_URL: z.string().optional(),
     MAIL_FROM: z.string().default('מערכת גבייה <no-reply@example.invalid>'),
+    /** Only the mock exists until a real acquirer is chosen (plan stage 9). */
+    PAYMENT_PROVIDER: z.enum(['mock']).default('mock'),
+    /** Mock only: probability (0..1) that an otherwise valid charge fails, for tests. */
+    MOCK_FAILURE_RATE: z.coerce.number().min(0).max(1).default(0),
     /** Test-only time travel and helper routes. Refused in production. */
     ENABLE_TEST_ROUTES: bool.default('false'),
   })

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>שדות כרטיס מאובטחים (מדומה)</title>
+    <link rel="stylesheet" href="fields.css" />
+  </head>
+  <body>
+    <!-- MOCK of an acquirer's hosted fields. Card data typed here never reaches the school's server. -->
+    <form id="f" autocomplete="on" novalidate>
+      <label>שם בעל הכרטיס<input id="holder" autocomplete="cc-name" required /></label>
+      <label>ת״ז בעל הכרטיס<input id="tz" inputmode="numeric" maxlength="9" required /></label>
+      <label
+        >מספר כרטיס<input
+          id="pan"
+          inputmode="numeric"
+          autocomplete="cc-number"
+          placeholder="1234 5678 9012 3456"
+          dir="ltr"
+          required
+      /></label>
+      <div class="two">
+        <label
+          >תוקף (MM/YY)<input
+            id="exp"
+            inputmode="numeric"
+            autocomplete="cc-exp"
+            placeholder="08/28"
+            dir="ltr"
+            required
+        /></label>
+        <label
+          >CVV<input id="cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" dir="ltr" required
+        /></label>
+      </div>
+      <p class="mu">שדות מאובטחים של חברת הסליקה (מצב בדיקה). מספר הכרטיס וה-CVV לא נשמרים במערכת.</p>
+      <p id="err" role="alert"></p>
+    </form>
+    <script src="fields.js"></script>
+  </body>
+</html>

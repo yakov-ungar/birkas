@@ -15,6 +15,21 @@ export async function testRoutes(app: FastifyInstance) {
     };
   });
 
+  /** Scans every table for a string (used to prove card numbers never reach the database). */
+  app.get('/api/test/scan', { config: { access: TEST_ONLY } }, async (req) => {
+    const { needle } = parse(z.object({ needle: z.string().min(4) }), req.query);
+    const tables = await db.$queryRawUnsafe<{ name: string }[]>(
+      `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_prisma%'`,
+    );
+    const hits: string[] = [];
+    for (const t of tables) {
+      const rows = await db.$queryRawUnsafe<unknown[]>(`SELECT * FROM "${t.name.replace(/"/g, '')}"`);
+      if (JSON.stringify(rows, (_k, v) => (typeof v === 'bigint' ? String(v) : v)).includes(needle))
+        hits.push(t.name);
+    }
+    return { hits };
+  });
+
   app.post('/api/test/clock/advance', { config: { access: TEST_ONLY } }, async (req) => {
     const { minutes } = parse(
       z.object({

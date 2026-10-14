@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from './auth';
 import { NAV } from './nav';
 import { hebrewDate, weekday, fmtDate } from '../components/format';
+import { GlobalSearch } from './GlobalSearch';
 
 export function Layout() {
   const { me, has, logout } = useAuth();
@@ -21,6 +22,7 @@ export function Layout() {
             {weekday(now)} · {hebrewDate(now)} · {fmtDate(now)}
           </span>
         </div>
+        {has('stu_view') && <GlobalSearch />}
         <span className="mu">
           מחובר כ{me.user.name} ({me.user.role})
         </span>

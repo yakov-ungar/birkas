@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ALL_PERMISSIONS } from '@tuition/shared';
 import { Agent, makeApp, signedIn, type TestCtx } from './helpers';
+import { permsOf } from '../src/plugins/access';
 
 let ctx: TestCtx;
 beforeAll(async () => {
@@ -31,23 +32,25 @@ describe('route access', () => {
     }
   });
 
-  it('every permission-protected route returns 403 to a user lacking exactly that permission', async () => {
-    const protectedRoutes = ctx.app.routeList.filter(
-      (x) => x.access.type === 'session' && x.access.permission,
-    );
-    expect(protectedRoutes.length).toBeGreaterThan(5);
-    for (const perm of ALL_PERMISSIONS) {
-      const routes = protectedRoutes.filter(
-        (r) => r.access.type === 'session' && r.access.permission === perm,
-      );
-      if (!routes.length) continue;
+  it('every permission-protected route returns 403 to a user lacking the permissions that unlock it', async () => {
+    const protectedRoutes = ctx.app.routeList.filter((x) => permsOf(x.access).length);
+    expect(protectedRoutes.length).toBeGreaterThan(30);
+    // Group by the exact set of permissions that unlock a route ("any of"); sign in once per set without them.
+    const groups = new Map<string, typeof protectedRoutes>();
+    for (const r of protectedRoutes) {
+      const k = permsOf(r.access).sort().join(',');
+      groups.set(k, [...(groups.get(k) ?? []), r]);
+    }
+    expect([...groups.keys()]).toEqual(expect.arrayContaining(['pay,rec', 'charges,pay']));
+    for (const [k, routes] of groups) {
+      const lacking = k.split(',');
       const { agent } = await signedIn(
         ctx,
-        ALL_PERMISSIONS.filter((p) => p !== perm),
+        ALL_PERMISSIONS.filter((p) => !lacking.includes(p)),
       );
       for (const r of routes) {
         const res = await agent.req(r.method, fill(r.url), r.method === 'GET' ? undefined : {});
-        expect(res.statusCode, `${r.method} ${r.url} without ${perm}`).toBe(403);
+        expect(res.statusCode, `${r.method} ${r.url} without ${k}`).toBe(403);
       }
     }
   });

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { containsPan, maskPans } from '../src/lib/redact';
+import { bodyContainsPan, containsPan, maskPans } from '../src/lib/redact';
 import { toCsv } from '../src/lib/csv';
 import { Agent, createUser, makeApp, type TestCtx } from './helpers';
 
@@ -12,6 +12,15 @@ describe('redaction helpers', () => {
       'phone 0501111111, id 123456782, ref 1234567890123',
     );
     expect(containsPan('nothing here')).toBe(false);
+  });
+
+  it('the body guard ignores UUIDs and finds card numbers anywhere else', () => {
+    expect(bodyContainsPan({ idempotencyKey: '12345678-1234-4123-8123-123456789012', a: [{ b: 'x' }] })).toBe(
+      false,
+    );
+    expect(bodyContainsPan({ note: '12345678-1234-4123-8123-123456789012' })).toBe(false);
+    expect(bodyContainsPan({ a: [{ b: 'כרטיס 4111-1111-1111-1111' }] })).toBe(true);
+    expect(bodyContainsPan({ n: 4111111111111111 })).toBe(true);
   });
 
   it('CSV neutralizes formula injection', () => {

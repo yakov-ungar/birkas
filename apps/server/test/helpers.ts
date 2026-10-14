@@ -9,11 +9,9 @@ import { ALL_PERMISSIONS, roleFor, type Permission } from '@tuition/shared';
 import { buildApp } from '../src/app';
 import { loadConfig, type Config } from '../src/config';
 import { TestClock } from '../src/lib/clock';
-import { Encryptor } from '../src/lib/crypto';
 import { createDb } from '../src/lib/db';
-import { createMailer } from '../src/lib/mailer';
+import { createDeps, type Deps } from '../src/deps';
 import { hashPassword } from '../src/lib/passwords';
-import type { Deps } from '../src/deps';
 
 export type TestDeps = Deps & { clock: TestClock };
 
@@ -39,13 +37,7 @@ export async function makeApp(env: Partial<Record<keyof Config, string>> = {}): 
   } as NodeJS.ProcessEnv);
   const db = await createDb(config.DATABASE_URL);
   const clock = new TestClock();
-  const deps: TestDeps = {
-    config,
-    db,
-    clock,
-    mailer: createMailer(db, config),
-    enc: new Encryptor(config.APP_ENCRYPTION_KEY),
-  };
+  const deps: TestDeps = createDeps(config, db, clock);
   const logs: string[] = [];
   const logStream = new Writable({
     write(chunk, _enc, cb) {

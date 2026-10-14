@@ -43,3 +43,21 @@ export async function enroll2fa(page: Page, used: Set<string>) {
   await page.getByRole('button', { name: 'שמרתי, המשך למערכת' }).click();
   return secret;
 }
+
+export const OFFICE = {
+  email: 'office@school.test',
+  password: 'Office-Pass-2026',
+  secret: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
+};
+
+/** Signs in a user whose 2FA secret is known. */
+export async function signIn(
+  page: Page,
+  user: { email: string; password: string; secret: string },
+  used: Set<string>,
+) {
+  await login(page, user.email, user.password);
+  await page.getByLabel(/קוד בן 6 ספרות/).fill(await freshCode(user.secret, used));
+  await page.getByRole('button', { name: 'אימות' }).click();
+  await expect(page.getByRole('navigation', { name: 'תפריט ראשי' })).toBeVisible();
+}

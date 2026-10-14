@@ -11,9 +11,8 @@ import { ALL_PERMISSIONS } from '@tuition/shared';
 import { buildApp } from '../src/app';
 import { loadConfig } from '../src/config';
 import { TestClock } from '../src/lib/clock';
-import { Encryptor } from '../src/lib/crypto';
 import { createDb } from '../src/lib/db';
-import { createMailer } from '../src/lib/mailer';
+import { createDeps } from '../src/deps';
 import { hashPassword } from '../src/lib/passwords';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -51,12 +50,19 @@ await db.user.create({
     passwordHash: await hashPassword('Admin-Pass-2026'),
   },
 });
-const app = await buildApp({
-  config,
-  db,
-  clock: new TestClock(),
-  mailer: createMailer(db, config),
-  enc: new Encryptor(config.APP_ENCRYPTION_KEY),
+// Second admin with 2FA already enrolled from a fixed test secret, for specs after stage 1.
+const deps0 = createDeps(config, db, new TestClock());
+await db.user.create({
+  data: {
+    name: 'מזכירות',
+    email: 'office@school.test',
+    role: 'מנהל מערכת',
+    permissions: JSON.stringify(ALL_PERMISSIONS),
+    passwordHash: await hashPassword('Office-Pass-2026'),
+    totpSecretEnc: deps0.enc.encrypt('JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'),
+    totpEnabledAt: new Date(),
+  },
 });
+const app = await buildApp({ ...deps0 });
 await app.listen({ host: config.HOST, port: config.PORT });
 console.log(`e2e server on ${config.APP_BASE_URL}`);

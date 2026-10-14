@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { normalizePermissions, type Permission, type SessionStage } from '@tuition/shared';
 import { AppError, forbidden, unauthorized } from '../lib/errors';
+import { permsOf } from './access';
 import { safeEqual, sha256 } from '../lib/crypto';
 import { cookieName } from '../modules/auth/session';
 import { getSettings } from '../modules/settings/service';
@@ -81,7 +82,8 @@ export function registerAuth(app: FastifyInstance) {
       user: { id: s.user.id, name: s.user.name, email: s.user.email, role: s.user.role, permissions },
     };
 
-    if (access.permission && !permissions.includes(access.permission)) throw forbidden();
+    const needed = permsOf(access);
+    if (needed.length && !needed.some((p) => permissions.includes(p))) throw forbidden();
 
     if (UNSAFE.has(req.method)) {
       const h = req.headers['x-csrf-token'];

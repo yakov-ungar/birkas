@@ -6,7 +6,7 @@ export interface MeResponse {
   stage: SessionStage;
   csrfToken: string;
   user: { id: string; name: string; email: string; role: string; permissions: Permission[] };
-  school: { name: string; yearName: string };
+  school: { name: string; yearName: string; grades: string[] };
   idleTimeoutMin: number;
 }
 

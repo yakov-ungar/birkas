@@ -20,24 +20,24 @@ model Setting {
 }
 
 model User {
-  id               String    @id @default(cuid())
-  name             String
-  email            String    @unique
-  passwordHash     String?
-  role             String
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String?
+  role          String
   /// JSON array of permission keys.
-  permissions      String
-  active           Boolean   @default(true)
+  permissions   String
+  active        Boolean   @default(true)
   /// AES-256-GCM encrypted TOTP secret.
-  totpSecretEnc    String?
-  totpEnabledAt    DateTime?
+  totpSecretEnc String?
+  totpEnabledAt DateTime?
   /// Last accepted TOTP time step, to block replay of the same code.
-  totpLastStep     Int?
-  failedLogins     Int       @default(0)
-  lockedUntil      DateTime?
-  lastLoginAt      DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  totpLastStep  Int?
+  failedLogins  Int       @default(0)
+  lockedUntil   DateTime?
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   sessions      Session[]
   invites       UserInvite[]
@@ -124,12 +124,245 @@ model AuditLog {
 
 /// Outgoing email. In dev/test nothing is sent; messages stay here.
 model Outbox {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  to              String
+  subject         String
+  text            String
+  html            String?
+  /// JSON array of attachment file names (contents are not stored).
+  attachmentNames String?
+  sentAt          DateTime?
+  error           String?
+}
+
+// ======================= Stage 2: families, students, money =======================
+// Money is Int agorot. Financial rows (Charge, Payment, PaymentAllocation, Receipt money
+// columns, CardTransaction results) are append-only, enforced by triggers in 0002.
+
+model Family {
+  id         String    @id @default(cuid())
+  /// "משפחת כהן"
+  name       String
+  parentName String
+  phone      String
+  /// Digits only (972 -> 0), for search and import matching.
+  phoneNorm  String
+  email      String    @default("")
+  address    String    @default("")
+  note       String    @default("")
+  createdAt  DateTime  @default(now())
+  archivedAt DateTime?
+
+  students Student[]
+  payments Payment[]
+
+  @@index([phoneNorm])
+}
+
+model Student {
   id        String    @id @default(cuid())
+  familyId  String
+  fullName  String
+  grade     String
+  /// active | left | graduated
+  status    String    @default("active")
+  /// Enrollment order; decides who is "first" for the sibling discount (decision C2).
+  enrollSeq Int
   createdAt DateTime  @default(now())
-  to        String
-  subject   String
-  text      String
-  html      String?
-  sentAt    DateTime?
-  error     String?
+  /// Set only for a student deleted before any financial activity (decision B2).
+  deletedAt DateTime?
+  family    Family    @relation(fields: [familyId], references: [id])
+
+  charges     Charge[]
+  allocations PaymentAllocation[]
+  cards       SavedCard[]
+  checks      Check[]
+
+  @@index([familyId])
+}
+
+model ChargeCatalogItem {
+  id            String   @id @default(cuid())
+  name          String
+  defaultAgorot Int
+  type          String
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model ChargeBatch {
+  id            String   @id @default(cuid())
+  description   String
+  catalogItemId String?
+  grade         String?
+  count         Int
+  amountAgorot  Int
+  date          String
+  createdById   String?
+  createdAt     DateTime @default(now())
+  charges       Charge[]
+}
+
+model Charge {
+  id           String       @id @default(cuid())
+  studentId    String
+  yearName     String
+  type         String
+  description  String
+  /// + debit (charge), - credit (discount). Reversal rows carry the opposite sign.
+  amountAgorot Int
+  /// Business date YYYY-MM-DD
+  date         String
+  reason       String?
+  internalNote String?
+  reversalOfId String?      @unique
+  batchId      String?
+  createdById  String?
+  createdAt    DateTime     @default(now())
+  student      Student      @relation(fields: [studentId], references: [id])
+  batch        ChargeBatch? @relation(fields: [batchId], references: [id])
+  reversalOf   Charge?      @relation("ChargeReversal", fields: [reversalOfId], references: [id])
+  reversedBy   Charge?      @relation("ChargeReversal")
+
+  @@index([studentId])
+  @@index([date])
+}
+
+model Payment {
+  id             String              @id @default(cuid())
+  familyId       String
+  /// card | transfer | cash | check | standing_order
+  method         String
+  /// + money in, - money out (refund or reversal)
+  amountAgorot   Int
+  date           String
+  reference      String              @default("")
+  /// payment | reversal | refund
+  kind           String
+  reversalOfId   String?             @unique
+  cardTxnId      String?             @unique
+  checkId        String?
+  idempotencyKey String              @unique
+  /// staff | portal | scheduler | bank | check
+  source         String
+  createdById    String?
+  createdAt      DateTime            @default(now())
+  family         Family              @relation(fields: [familyId], references: [id])
+  allocations    PaymentAllocation[]
+  receipt        Receipt?
+  reversalOf     Payment?            @relation("PaymentReversal", fields: [reversalOfId], references: [id])
+  reversedBy     Payment?            @relation("PaymentReversal")
+
+  @@index([familyId])
+  @@index([date])
+}
+
+model PaymentAllocation {
+  id           String  @id @default(cuid())
+  paymentId    String
+  studentId    String
+  amountAgorot Int
+  payment      Payment @relation(fields: [paymentId], references: [id])
+  student      Student @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@index([paymentId])
+}
+
+/// Gap-free numbering per document type (decision A3: separate sequences).
+model DocumentSequence {
+  docType String @id
+  next    Int
+}
+
+model Receipt {
+  id                 String    @id @default(cuid())
+  /// receipt | credit_note | refund
+  docType            String
+  number             Int
+  paymentId          String    @unique
+  familyId           String
+  /// Business date of the payment
+  date               String
+  issuedAt           DateTime
+  payerName          String
+  /// Absolute amount shown on the document
+  amountAgorot       Int
+  method             String
+  reference          String    @default("")
+  /// For a credit note: the receipt it credits.
+  creditForReceiptId String?   @unique
+  reason             String?
+  /// SHA-256 of the canonical document content, frozen at issue time (decision A2).
+  contentSha256      String
+  // Operational fields (may change): print count and delivery.
+  printCount         Int       @default(0)
+  sentAt             DateTime?
+  sentTo             String?
+  payment            Payment   @relation(fields: [paymentId], references: [id])
+  creditFor          Receipt?  @relation("ReceiptCredit", fields: [creditForReceiptId], references: [id])
+  creditedBy         Receipt?  @relation("ReceiptCredit")
+
+  @@unique([docType, number])
+  @@index([familyId])
+}
+
+/// Card stored as a provider token only. Never a card number or CVV.
+model SavedCard {
+  id         String    @id @default(cuid())
+  studentId  String
+  provider   String
+  tokenEnc   String
+  last4      String
+  brand      String
+  expMonth   Int
+  expYear    Int
+  holderName String
+  isDefault  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  removedAt  DateTime?
+  student    Student   @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+}
+
+/// Every call to the payment provider, written before the call so nothing is lost on a crash.
+model CardTransaction {
+  id             String   @id @default(cuid())
+  idempotencyKey String   @unique
+  /// charge | refund
+  kind           String
+  familyId       String
+  amountAgorot   Int
+  cardId         String?
+  last4          String
+  /// pending | approved | declined | error
+  status         String
+  providerTxnId  String?
+  approvalCode   String?
+  errorMessageHe String?
+  /// For refunds: the charge being refunded.
+  refundOfId     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Check {
+  id             String   @id @default(cuid())
+  studentId      String
+  familyId       String
+  number         String
+  bank           String
+  amountAgorot   Int
+  dueDate        String
+  /// pending | deposited | returned | cancelled
+  status         String   @default("pending")
+  paymentId      String?
+  idempotencyKey String?  @unique
+  createdById    String?
+  createdAt      DateTime @default(now())
+  student        Student  @relation(fields: [studentId], references: [id])
+
+  @@index([status, dueDate])
 }

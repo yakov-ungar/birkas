@@ -18,6 +18,10 @@ import { InvitePage } from './pages/auth/InvitePage';
 import { UsersPage } from './pages/users/UsersPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { Placeholder } from './pages/Placeholder';
+import { FamiliesPage } from './pages/families/FamiliesPage';
+import { ChargesPage } from './pages/charges/ChargesPage';
+import { ReceiptsPage } from './pages/receipts/ReceiptsPage';
+import { DialogProvider } from './components/Dialogs';
 import { HttpError } from './api/client';
 
 const queryClient = new QueryClient({
@@ -29,7 +33,13 @@ const queryClient = new QueryClient({
   },
 });
 
-const BUILT: Record<string, JSX.Element> = { '/users': <UsersPage />, '/settings': <SettingsPage /> };
+const BUILT: Record<string, JSX.Element> = {
+  '/users': <UsersPage />,
+  '/settings': <SettingsPage />,
+  '/families': <FamiliesPage />,
+  '/charges': <ChargesPage />,
+  '/receipts': <ReceiptsPage />,
+};
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -45,7 +55,9 @@ createRoot(document.getElementById('root')!).render(
               <Route
                 element={
                   <RequireStaff>
-                    <Layout />
+                    <DialogProvider>
+                      <Layout />
+                    </DialogProvider>
                   </RequireStaff>
                 }
               >

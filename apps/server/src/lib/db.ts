@@ -26,6 +26,24 @@ export async function createDb(url: string): Promise<Db> {
     await db.$queryRawUnsafe('PRAGMA busy_timeout = 5000');
     await db.$queryRawUnsafe('PRAGMA foreign_keys = ON');
     await db.$queryRawUnsafe('PRAGMA synchronous = NORMAL');
+    serializeTransactions(db);
   }
   return db;
+}
+
+/**
+ * SQLite allows one writer, and a transaction that read before another writer committed cannot
+ * upgrade to a write (SQLITE_BUSY_SNAPSHOT). The server is a single process, so interactive
+ * transactions are queued in-process. Code inside a transaction must use `tx`, never `db`.
+ * Not needed (and not applied) on PostgreSQL.
+ */
+function serializeTransactions(db: PrismaClient) {
+  const original = db.$transaction.bind(db) as (...args: unknown[]) => Promise<unknown>;
+  let tail: Promise<unknown> = Promise.resolve();
+  (db as unknown as { $transaction: unknown }).$transaction = (arg: unknown, opts?: unknown) => {
+    if (typeof arg !== 'function') return original(arg, opts);
+    const run = tail.then(() => original(arg, opts));
+    tail = run.catch(() => undefined);
+    return run;
+  };
 }

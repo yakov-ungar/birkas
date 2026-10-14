@@ -207,7 +207,7 @@ export async function authRoutes(app: FastifyInstance) {
         stage: auth.stage,
         csrfToken: auth.csrfToken,
         user: { ...auth.user, permissions: normalizePermissions(auth.user.permissions) },
-        school: { name: s.schoolName, yearName: s.activeYearName },
+        school: { name: s.schoolName, yearName: s.activeYearName, grades: s.grades },
         idleTimeoutMin: s.idleTimeoutMin,
       };
       return body;

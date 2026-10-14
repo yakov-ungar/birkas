@@ -1,19 +1,12 @@
 import { loadConfig } from './config';
 import { buildApp } from './app';
 import { systemClock } from './lib/clock';
-import { Encryptor } from './lib/crypto';
 import { createDb } from './lib/db';
-import { createMailer } from './lib/mailer';
+import { createDeps } from './deps';
 
 const config = loadConfig();
 const db = await createDb(config.DATABASE_URL);
-const app = await buildApp({
-  config,
-  db,
-  clock: systemClock,
-  mailer: createMailer(db, config),
-  enc: new Encryptor(config.APP_ENCRYPTION_KEY),
-});
+const app = await buildApp(createDeps(config, db, systemClock));
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'shutting down');
