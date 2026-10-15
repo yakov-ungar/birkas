@@ -207,7 +207,12 @@ export async function authRoutes(app: FastifyInstance) {
         stage: auth.stage,
         csrfToken: auth.csrfToken,
         user: { ...auth.user, permissions: normalizePermissions(auth.user.permissions) },
-        school: { name: s.schoolName, yearName: s.activeYearName, grades: s.grades },
+        school: {
+          name: s.schoolName,
+          yearName: s.activeYearName,
+          grades: s.grades,
+          textMessaging: s.textMessaging,
+        },
         idleTimeoutMin: s.idleTimeoutMin,
         testMode: deps.config.ENABLE_TEST_ROUTES && deps.config.NODE_ENV !== 'production',
         today: israelDate(clock.now()),

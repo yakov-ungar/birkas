@@ -6,7 +6,7 @@ const used = new Set<string>();
 const inDays = (n: number) =>
   new Date(Date.now() + n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
 
-test('stage 5: payment promise, debtors, rule check and a group SMS', async ({ page }) => {
+test('stage 5: payment promise, debtors, rule check and a group message', async ({ page }) => {
   await signIn(page, OFFICE, used);
   await page.getByRole('link', { name: 'תלמידים ומשפחות' }).click();
   await page.getByRole('button', { name: 'תלמיד חדש' }).click();
@@ -48,20 +48,20 @@ test('stage 5: payment promise, debtors, rule check and a group SMS', async ({ p
   );
   await page.keyboard.press('Escape');
 
-  // Group SMS to all debtors.
+  // Group message to all debtors (email only since stage 9).
   await page.getByRole('tab', { name: 'מעקב חייבים' }).click();
   await page.getByRole('button', { name: 'שליחת הודעה לקבוצה' }).click();
   const g = page.getByRole('dialog', { name: 'שליחת הודעה לקבוצה' });
-  await g.getByLabel('ערוץ').selectOption('sms');
+  await expect(g.getByLabel('ערוץ').locator('option')).toHaveText(['מייל']);
   await g.getByRole('button', { name: 'המשך' }).click();
   const confirm = page.getByRole('dialog', { name: 'אישור שליחה' });
-  await expect(confirm).toContainText(/לשלוח \d+ הודעות בSMS\?/);
+  await expect(confirm).toContainText(/לשלוח \d+ הודעות במייל\?/);
   await expect(confirm).toContainText('נשארה יתרה לתשלום שכר לימוד בסך');
   await confirm.getByRole('button', { name: 'שליחה' }).click();
   await expect(page.getByRole('dialog', { name: 'ההודעות נשלחו' })).toContainText('הודעות נמסרו');
   await page.keyboard.press('Escape');
   await page.getByRole('tab', { name: 'היסטוריית הודעות' }).click();
-  await expect(page.getByRole('row', { name: /SMS/ }).first()).toContainText('ידני');
+  await expect(page.getByRole('row', { name: /מייל/ }).first()).toContainText('ידני');
 
   const a11y = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
   expect(a11y.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);

@@ -19,6 +19,7 @@ import { useDialogs } from '../../components/Dialogs';
 import { useToast } from '../../components/Toast';
 import { FormModal } from '../families/StudentActions';
 import { FamilyModal } from '../families/FamilyModal';
+import { useChannels } from '../../app/channels';
 
 const fmt = (d: string) => d.split('-').reverse().join('/');
 
@@ -103,8 +104,9 @@ export function GroupSendModal({ rules }: { rules: RuleRow[] }) {
   const { close, open } = useDialogs();
   const grades = useGrades();
   const invalidate = useInvalidateMoney();
+  const channels = useChannels();
   const [group, setGroup] = useState('all');
-  const [channel, setChannel] = useState<ChannelKey>('sms');
+  const [channel, setChannel] = useState<ChannelKey>(channels[0]!);
   const [tpl, setTpl] = useState('');
   const [text, setText] = useState(
     'שלום {הורה}, נשארה יתרה לתשלום שכר לימוד בסך {יתרה}. לתשלום מהיר: {קישור}',
@@ -195,7 +197,7 @@ export function GroupSendModal({ rules }: { rules: RuleRow[] }) {
             value={channel}
             onChange={(e) => setChannel(e.target.value as ChannelKey)}
           >
-            {(Object.keys(CHANNELS) as ChannelKey[]).map((c) => (
+            {channels.map((c) => (
               <option key={c} value={c}>
                 {CHANNELS[c]}
               </option>
@@ -230,6 +232,7 @@ export function GroupSendModal({ rules }: { rules: RuleRow[] }) {
 export function RuleEditModal({ rule }: { rule: RuleRow }) {
   const { close } = useDialogs();
   const invalidate = useInvalidateMoney();
+  const channels = useChannels();
   const [channel, setChannel] = useState<ChannelKey>(rule.channel);
   const [enabled, setEnabled] = useState(rule.enabled);
   const [template, setTemplate] = useState(rule.template);
@@ -251,7 +254,7 @@ export function RuleEditModal({ rule }: { rule: RuleRow }) {
             value={channel}
             onChange={(e) => setChannel(e.target.value as ChannelKey)}
           >
-            {(Object.keys(CHANNELS) as ChannelKey[]).map((c) => (
+            {channels.map((c) => (
               <option key={c} value={c}>
                 {CHANNELS[c]}
               </option>

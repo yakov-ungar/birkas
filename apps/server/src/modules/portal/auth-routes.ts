@@ -37,6 +37,11 @@ export async function portalAuthRoutes(app: FastifyInstance) {
   const deps = app.deps;
   const { db, clock } = deps;
 
+  /** Which channels the sign-in screen may offer (stage 9: email only unless text messaging is on). */
+  app.get('/api/portal/login/options', { config: { access: PUBLIC, rateLimit: PORTAL_LIMIT } }, async () => ({
+    textMessaging: (await getSettings(db)).textMessaging,
+  }));
+
   /**
    * Sends a one-time code to the phone or email registered with the family.
    * The answer is the same whether or not the details match a family (no enumeration).
@@ -71,7 +76,13 @@ export async function portalAuthRoutes(app: FastifyInstance) {
       const challengeId = newChallengeId();
       const f = familyId ? await db.family.findFirst({ where: { id: familyId, archivedAt: null } }) : null;
       if (!f) return { challengeId, sentTo: null };
-      if (channel === 'email' && !f.email) channel = 'sms';
+      const { textMessaging } = await getSettings(db);
+      if (!textMessaging) {
+        // Stage 9: email only. A typed phone number finds the family; the code goes to its email.
+        channel = 'email';
+        if (!f.email && input.link)
+          throw badRequest('לא רשומה כתובת מייל למשפחה. יש לפנות למזכירות בית הספר');
+      } else if (channel === 'email' && !f.email) channel = 'sms';
       const to = channel === 'email' ? f.email : normalizePhone(f.phone);
       const recent = await db.parentOtp.count({
         where: { familyId: f.id, createdAt: { gte: new Date(now.getTime() - OTP_WINDOW_MINUTES * 60_000) } },

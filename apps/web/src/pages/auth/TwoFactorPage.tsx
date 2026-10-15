@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router';
 import { HttpError, post } from '../../api/client';
 import { useAuth } from '../../app/auth';
 import { Field, FormError } from '../../components/Field';

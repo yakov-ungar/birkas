@@ -4,7 +4,7 @@ import { formatMoney, statementSendSchema, type LedgerRow } from '@tuition/share
 import { staff } from '../../plugins/access';
 import { actorOf } from '../../plugins/auth';
 import { badRequest, notFound, parse } from '../../lib/errors';
-import { dispatch, enqueue, familyVars, newBatch } from '../messages/service';
+import { assertChannel, dispatch, enqueue, familyVars, newBatch } from '../messages/service';
 import { fillTemplate } from '../../domain/templates';
 import { RtlPdf } from '../../lib/pdf';
 import { recordAudit } from '../audit/service';
@@ -99,6 +99,7 @@ export async function statementRoutes(app: FastifyInstance) {
     const { id } = parse(idParam, req.params);
     const input = parse(statementSendSchema, req.body);
     const channel = input.channel ?? 'email';
+    await assertChannel(db, channel);
     const s = await familyStatement(db, id, todayOf(deps));
     if (channel === 'email') {
       const pdf = await statementPdf(s);
@@ -112,6 +113,7 @@ export async function statementRoutes(app: FastifyInstance) {
       // SMS / WhatsApp: a short text with the balance and the portal link (no attachment).
       const template = `שלום {הורה}, דף חשבון נכון ל-${fmtDate(s.asOf)}: יתרה לתשלום {יתרה}. לצפייה ותשלום: {קישור}`;
       const batch = await newBatch(db, {
+        at: deps.clock.now(),
         channel,
         source: 'manual',
         template,

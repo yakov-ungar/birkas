@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { Dashboard } from '@tuition/shared';
 import { get } from '../../api/client';
 import { useAuth } from '../../app/auth';

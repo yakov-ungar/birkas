@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router';
 import type { SessionStage } from '@tuition/shared';
 import { HttpError, post } from '../../api/client';
 import { useAuth } from '../../app/auth';

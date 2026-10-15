@@ -8,6 +8,7 @@ import { Money } from '../../components/Money';
 import { useDialogs } from '../../components/Dialogs';
 import { useToast } from '../../components/Toast';
 import { LedgerTable } from './LedgerTable';
+import { useChannels } from '../../app/channels';
 
 interface Statement {
   schoolName: string;
@@ -27,6 +28,7 @@ export function StatementModal({ familyId, after }: { familyId: string; after?: 
   const [sending, setSending] = useState(false);
   const [email, setEmail] = useState('');
   const [channel, setChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
+  const textMessaging = useChannels().length > 1;
   const [err, setErr] = useState<string | null>(null);
   const s = q.data;
   const done = () => (after ? open(after) : close());
@@ -90,8 +92,8 @@ export function StatementModal({ familyId, after }: { familyId: string; after?: 
                   onChange={(e) => setChannel(e.target.value as 'email' | 'sms' | 'whatsapp')}
                 >
                   <option value="email">מייל (עם PDF)</option>
-                  <option value="whatsapp">וואטסאפ</option>
-                  <option value="sms">SMS</option>
+                  {textMessaging && <option value="whatsapp">וואטסאפ</option>}
+                  {textMessaging && <option value="sms">SMS</option>}
                 </select>
               </div>
               {channel === 'email' && (

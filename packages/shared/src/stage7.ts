@@ -84,6 +84,7 @@ export const generalPatchSchema = z
     autoRunTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'שעה לא תקינה'),
     backupFrequency: z.enum(['daily', 'weekly']),
     grades: z.array(z.string().trim().min(1).max(20)).min(1, 'יש להגדיר לפחות כיתה אחת').max(20),
+    textMessaging: z.boolean().optional(),
   })
   .strict();
 export type GeneralPatch = z.infer<typeof generalPatchSchema>;

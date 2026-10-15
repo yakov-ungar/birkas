@@ -13,6 +13,8 @@ import { createDb } from '../src/lib/db';
 import { createDeps, type Deps } from '../src/deps';
 import { hashPassword } from '../src/lib/passwords';
 import { checkIntegrity } from '../src/ops/integrity';
+import { saveSettings } from '../src/modules/settings/service';
+import type { AllSettings } from '@tuition/shared';
 
 export type TestDeps = Deps & { clock: TestClock };
 
@@ -67,6 +69,10 @@ export async function makeApp(env: Partial<Record<keyof Config, string>> = {}): 
   };
   return ctx;
 }
+
+/** Changes settings directly (e.g. switching text messaging on for the SMS tests). */
+export const setSettings = (ctx: TestCtx, patch: Partial<AllSettings>) =>
+  ctx.deps.db.$transaction((tx) => saveSettings(tx, patch));
 
 let seq = 0;
 

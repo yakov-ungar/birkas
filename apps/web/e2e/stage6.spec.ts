@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { OFFICE, signIn } from './helpers';
+import { OFFICE, lastMailTo, signIn } from './helpers';
 
 const used = new Set<string>();
 const PHONE = '054-6666666';
+const EMAIL = 'barak@example.com';
 
 const noSerious = async (page: import('@playwright/test').Page) => {
   const a11y = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
@@ -24,6 +25,7 @@ test('stage 6: a parent asks for installments in the portal, staff approve, the 
   await d.getByLabel('כיתה').selectOption("ב'");
   await d.getByLabel('שם ההורה').fill('יעל ברק');
   await d.getByLabel('טלפון').fill(PHONE);
+  await d.getByLabel('אימייל').fill(EMAIL);
   await d.getByRole('button', { name: 'שמירה' }).click();
   await page.getByRole('dialog', { name: 'התלמיד נוסף' }).getByRole('button', { name: 'סגור' }).click();
 
@@ -33,11 +35,11 @@ test('stage 6: a parent asks for installments in the portal, staff approve, the 
   await portal.goto('/portal');
   await portal.getByLabel('טלפון או מייל הרשומים בבית הספר').fill(PHONE);
   await portal.getByRole('button', { name: 'שליחת קוד' }).click();
-  await expect(portal.getByText('אם הפרטים רשומים אצלנו, נשלח אליהם קוד בן 6 ספרות.')).toBeVisible();
-  const texts = (await (await request.get('/api/test/texts?to=0546666666')).json()) as {
-    texts: { body: string }[];
-  };
-  const code = texts.texts[0]!.body.match(/\d{6}/)![0];
+  // Email only (stage 9): the parent types the phone, the code goes to the family's email.
+  await expect(
+    portal.getByText('אם הפרטים רשומים אצלנו, נשלח קוד בן 6 ספרות למייל של המשפחה.'),
+  ).toBeVisible();
+  const code = (await lastMailTo(request, EMAIL)).text.match(/\d{6}/)![0];
   await portal.getByLabel('קוד כניסה').fill(code);
   await portal.getByRole('button', { name: 'כניסה' }).click();
   await expect(portal.getByText('שלום יעל ברק')).toBeVisible();

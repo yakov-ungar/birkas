@@ -28,6 +28,8 @@ import {
   type Channel,
   type Group,
   type RuleKey,
+  assertChannel,
+  effectiveChannel,
 } from './service';
 import { lastContact, noteRows, openPromise } from './collection';
 
@@ -135,24 +137,23 @@ export async function messageRoutes(app: FastifyInstance) {
   app.get('/api/messages/rules', { config: { access: staff('msg') } }, async () => {
     const order: RuleKey[] = ['pre_charge', 'charge_failed', 'debt_30', 'receipt_auto'];
     const rules = await db.reminderRule.findMany();
-    return {
-      rules: order
-        .map((k) => rules.find((r) => r.key === k)!)
-        .map(
-          (r): RuleRow => ({
-            key: r.key as RuleKey,
-            name: r.name,
-            enabled: r.enabled,
-            channel: r.channel as Channel,
-            template: r.template,
-          }),
-        ),
-    };
+    const out: RuleRow[] = [];
+    for (const r of order.map((k) => rules.find((x) => x.key === k)!))
+      out.push({
+        key: r.key as RuleKey,
+        name: r.name,
+        enabled: r.enabled,
+        // What the rule really uses (email while text messaging is off).
+        channel: await effectiveChannel(db, r.channel as Channel),
+        template: r.template,
+      });
+    return { rules: out };
   });
 
   app.patch('/api/messages/rules/:key', { config: { access: staff('msg') } }, async (req) => {
     const { key } = parse(ruleKey, req.params);
     const input = parse(ruleUpdateSchema, req.body);
+    if (input.channel) await assertChannel(db, input.channel as Channel);
     return db.$transaction(async (tx) => {
       const before = await tx.reminderRule.findUniqueOrThrow({ where: { key } });
       const after = await tx.reminderRule.update({ where: { key }, data: input });
@@ -191,6 +192,7 @@ export async function messageRoutes(app: FastifyInstance) {
   // ---------- group send ----------
   app.post('/api/messages/group/preview', { config: { access: staff('msg') } }, async (req) => {
     const input = parse(groupSendSchema, req.body);
+    await assertChannel(db, input.channel);
     const ids = await groupFamilies(db, input.group as Group, todayOf(deps));
     return {
       count: ids.length,
@@ -201,11 +203,13 @@ export async function messageRoutes(app: FastifyInstance) {
 
   app.post('/api/messages/group', { config: { access: staff('msg') } }, async (req) => {
     const input = parse(groupSendSchema, req.body);
+    await assertChannel(db, input.channel);
     const ids = await groupFamilies(db, input.group as Group, todayOf(deps));
     if (!ids.length) throw badRequest('אין נמענים בקבוצה שנבחרה');
     if (input.expectedCount !== undefined && input.expectedCount !== ids.length)
       throw conflict('מספר הנמענים השתנה מאז התצוגה המקדימה. נסו שוב');
     const batch = await newBatch(db, {
+      at: clock.now(),
       channel: input.channel,
       source: 'manual',
       template: input.template,

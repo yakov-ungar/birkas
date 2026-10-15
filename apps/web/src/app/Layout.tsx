@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router';
 import { useAuth } from './auth';
 import { NAV } from './nav';
 import { hebrewDate, weekday, fmtDate } from '../components/format';

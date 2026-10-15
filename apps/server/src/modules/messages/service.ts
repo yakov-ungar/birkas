@@ -8,6 +8,8 @@ import { nextAllowed, isQuiet } from '../../domain/quiet-hours';
 import { addAging, type AgingBuckets } from '../../domain/ledger';
 import { EMPTY, loadMoney, summarize } from '../finance/money';
 import { emailDocument } from '../receipts/service';
+import { getSettings } from '../settings/service';
+import { badRequest } from '../../lib/errors';
 import { signPortalLink } from '../portal/session';
 
 export type Channel = 'sms' | 'whatsapp' | 'email';
@@ -50,8 +52,23 @@ export async function familyVars(
   };
 }
 
+/** The channel actually used: email unless text messaging is switched on in settings (stage 9). */
+export async function effectiveChannel(db: Db | Tx, ch: Channel): Promise<Channel> {
+  return (await getSettings(db)).textMessaging ? ch : 'email';
+}
+
+/** Manual sends must not ask for a channel that is switched off. */
+export async function assertChannel(db: Db | Tx, ch: Channel) {
+  if (ch !== 'email' && !(await getSettings(db)).textMessaging)
+    throw badRequest('המערכת מוגדרת לשליחה במייל בלבד. אפשר להפעיל SMS ווואטסאפ בהגדרות', {
+      channel: 'ערוץ לא פעיל',
+    });
+}
+
+/** A rule, with the channel it really sends on. */
 export async function getRule(db: Db | Tx, key: RuleKey) {
-  return db.reminderRule.findUniqueOrThrow({ where: { key } });
+  const r = await db.reminderRule.findUniqueOrThrow({ where: { key } });
+  return { ...r, channel: await effectiveChannel(db, r.channel as Channel) };
 }
 
 interface Enqueue {
@@ -83,6 +100,8 @@ export async function enqueue(deps: Deps, db: Db | Tx, m: Enqueue) {
       notBefore: auto ? nextAllowed(now) : now,
       dedupeKey: m.dedupeKey ?? null,
       ruleKey: m.ruleKey ?? null,
+      // The app clock, not the database default: the 14-day rule compares against it.
+      createdAt: now,
     },
   });
 }
@@ -96,11 +115,13 @@ export const newBatch = (
     template: string;
     createdByName?: string | null;
     recipientCount?: number;
+    /** The app clock (tests move it). */
+    at: Date;
   },
 ) =>
   db.messageBatch.create({
     data: {
-      at: new Date(),
+      at: b.at,
       channel: b.channel,
       source: b.source,
       ruleKey: b.ruleKey ?? null,
@@ -287,6 +308,7 @@ export async function runRule(deps: Deps, key: RuleKey, createdByName: string | 
     return n;
   }
   const batch = await newBatch(db, {
+    at: deps.clock.now(),
     channel: rule.channel as Channel,
     source: 'auto',
     ruleKey: key,
@@ -331,6 +353,7 @@ export async function onChargeFailed(deps: Deps, planChargeId: string) {
     }),
   );
   const batch = await newBatch(deps.db, {
+    at: deps.clock.now(),
     channel: rule.channel as Channel,
     source: 'auto',
     ruleKey: 'charge_failed',
@@ -366,6 +389,7 @@ export async function onReceipt(
       await emailDocument(deps, receiptId, f.email);
     } else {
       const batch = await newBatch(deps.db, {
+        at: deps.clock.now(),
         channel: rule.channel as Channel,
         source: 'auto',
         ruleKey: 'receipt_auto',

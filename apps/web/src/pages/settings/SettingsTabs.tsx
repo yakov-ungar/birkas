@@ -31,6 +31,7 @@ export function GeneralModal({ s, onClose }: { s: AllSettings; onClose: () => vo
     autoRunTime: s.autoRunTime,
     backupFrequency: s.backupFrequency,
     grades: s.grades.join(', '),
+    textMessaging: s.textMessaging,
   });
   const [fee, setFee] = useState<number | null>(s.checkReturnFeeAgorot);
   const sibChanged = Number(v.s2) !== s.siblingPct[1] || Number(v.s3) !== s.siblingPct[2];
@@ -54,6 +55,7 @@ export function GeneralModal({ s, onClose }: { s: AllSettings; onClose: () => vo
             .split(',')
             .map((g) => g.trim())
             .filter(Boolean),
+          textMessaging: v.textMessaging,
         });
         await qc.invalidateQueries({ queryKey: ['settings'] });
         await invalidate();
@@ -108,6 +110,14 @@ export function GeneralModal({ s, onClose }: { s: AllSettings; onClose: () => vo
             onChange={(e) => setV({ ...v, grades: e.target.value })}
             error={fe.grades}
           />
+          <label className="chk" style={{ gridColumn: '1 / -1' }}>
+            <input
+              type="checkbox"
+              checked={v.textMessaging}
+              onChange={(e) => setV({ ...v, textMessaging: e.target.checked })}
+            />{' '}
+            שליחת הודעות גם ב-SMS ובוואטסאפ (כשכבוי: מייל בלבד)
+          </label>
           {sibChanged && (
             <p className="mu" style={{ gridColumn: '1 / -1' }}>
               שינוי אחוזי הנחת האחים יחשב מחדש את ההנחה לכל המשפחות בשנה הפעילה, בשורות ביטול ושורות חדשות.

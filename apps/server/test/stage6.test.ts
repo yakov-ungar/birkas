@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { israelDate } from '../src/lib/clock';
 import { familyVars } from '../src/modules/messages/service';
-import { Agent, makeApp, signedIn, type TestCtx } from './helpers';
+import { Agent, makeApp, setSettings, signedIn, type TestCtx } from './helpers';
 import { key, mockCard, newFamily, addStudent, pay } from './finance-helpers';
 
 let ctx: TestCtx;
@@ -11,6 +11,8 @@ const today = () => israelDate(ctx.deps.clock.now());
 
 beforeEach(async () => {
   ctx = await makeApp();
+  // These tests cover SMS and WhatsApp, which the school switched off by default (stage 9).
+  await setSettings(ctx, { textMessaging: true });
   ctx.deps.clock.set(il('2026-10-14T10:00:00'));
   a = (await signedIn(ctx)).agent;
 });

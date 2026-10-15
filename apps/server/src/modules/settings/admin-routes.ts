@@ -24,7 +24,7 @@ const keyParam = z.object({
 });
 
 /** The provider that actually runs today. Only mocks exist until real providers are chosen (stage 9). */
-function providerOf(deps: Deps, key: IntegrationKey): string {
+function providerOf(deps: Deps, key: IntegrationKey, textMessaging: boolean): string {
   switch (key) {
     case 'card':
       return `${deps.payments.name === 'mock' ? 'ספק מדומה' : deps.payments.name} · מצב בדיקה`;
@@ -32,7 +32,9 @@ function providerOf(deps: Deps, key: IntegrationKey): string {
       return 'קובץ ידני (לבדיקה בלבד)';
     case 'sms':
     case 'whatsapp':
-      return 'ספק מדומה, לא נשלחות הודעות אמיתיות';
+      return textMessaging
+        ? 'ספק מדומה, לא נשלחות הודעות אמיתיות'
+        : 'לא בשימוש: המערכת שולחת הודעות במייל בלבד';
     case 'email':
       return deps.config.MAIL_TRANSPORT === 'smtp' ? 'שרת SMTP מהגדרות השרת' : 'תיבת יוצא פנימית (בדיקה)';
     case 'accounting':
@@ -40,13 +42,13 @@ function providerOf(deps: Deps, key: IntegrationKey): string {
   }
 }
 
-const toRow = (deps: Deps, i: Integration): IntegrationRow => ({
+const toRow = (deps: Deps, i: Integration, textMessaging: boolean): IntegrationRow => ({
   key: i.key as IntegrationKey,
   name: INTEGRATIONS[i.key as IntegrationKey],
   connected: i.connected,
   mode: i.mode === 'live' ? 'live' : 'test',
   details: i.details,
-  provider: providerOf(deps, i.key as IntegrationKey),
+  provider: providerOf(deps, i.key as IntegrationKey, textMessaging),
   updatedAt: i.updatedAt?.toISOString() ?? null,
 });
 
@@ -103,7 +105,8 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
     const rows = await db.integration.findMany();
     const order = Object.keys(INTEGRATIONS);
     rows.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
-    return { integrations: rows.map((r) => toRow(deps, r)) };
+    const { textMessaging } = await getSettings(db);
+    return { integrations: rows.map((r) => toRow(deps, r, textMessaging)) };
   });
 
   app.post('/api/settings/integrations/:key/test', { config: { access: staff('settings') } }, async (req) => {
@@ -117,14 +120,34 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
         messageHe: `${INTEGRATIONS[key]}: ${r.messageHe}, תשובה תוך ${r.latencyMs} מילישניות`,
       };
     }
+    if (key === 'email') {
+      // The SMTP server is the one configured on the server (SMTP_URL); a test mail goes to whoever asked.
+      const v = await deps.mailer.verify();
+      if (!v.ok) return { ok: false, messageHe: `${INTEGRATIONS[key]}: ${v.messageHe}` };
+      await deps.mailer.send({
+        to: req.auth!.user.email,
+        subject: 'בדיקת חיבור מייל',
+        text: 'זו הודעת בדיקה ממערכת הגבייה. אם קיבלת אותה, שליחת המיילים פועלת.',
+      });
+      return {
+        ok: true,
+        messageHe: `${INTEGRATIONS[key]}: ${v.messageHe}. נשלח מייל בדיקה אל ${req.auth!.user.email}`,
+      };
+    }
     // No real provider exists yet: say what is running instead of pretending to connect.
-    return { ok: true, messageHe: `${INTEGRATIONS[key]}: ${providerOf(deps, key)}` };
+    const { textMessaging } = await getSettings(db);
+    return { ok: true, messageHe: `${INTEGRATIONS[key]}: ${providerOf(deps, key, textMessaging)}` };
   });
 
   /** Stores credentials for later (stage 9). Nothing connects outside with them yet. */
   app.post('/api/settings/integrations/:key', { config: { access: staff('settings') } }, async (req) => {
     const { key } = parse(keyParam, req.params);
     const input = parse(integrationConfigSchema, req.body);
+    const { textMessaging } = await getSettings(db);
+    if ((key === 'sms' || key === 'whatsapp') && !textMessaging)
+      throw badRequest(
+        'השירות לא בשימוש: המערכת שולחת הודעות במייל בלבד. אפשר להפעיל SMS ווואטסאפ בהגדרות הכלליות',
+      );
     const now = clock.now();
     const visible =
       input.username.length > 4 ? `${input.username.slice(0, 2)}***${input.username.slice(-2)}` : '***';
@@ -149,7 +172,7 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
       });
       return r;
     });
-    return { integration: toRow(deps, row) };
+    return { integration: toRow(deps, row, textMessaging) };
   });
 
   app.post(
@@ -177,7 +200,7 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
         });
         return r;
       });
-      return { integration: toRow(deps, row) };
+      return { integration: toRow(deps, row, (await getSettings(db)).textMessaging) };
     },
   );
 

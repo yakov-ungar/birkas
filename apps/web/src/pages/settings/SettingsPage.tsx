@@ -46,6 +46,7 @@ function General({ s }: { s: AllSettings }) {
     ['עמלת שיק חוזר', shekel(s.checkReturnFeeAgorot)],
     ['הרצת חיובים אוטומטית', s.autoRunTime],
     ['גיבוי אוטומטי', s.backupFrequency === 'daily' ? 'יומי' : 'שבועי'],
+    ['ערוצי הודעות', s.textMessaging ? 'מייל, SMS ווואטסאפ' : 'מייל בלבד'],
   ];
   return (
     <div className="card">

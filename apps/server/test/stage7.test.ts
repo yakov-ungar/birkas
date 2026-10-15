@@ -209,13 +209,13 @@ describe('integrations (demo חיבורים)', () => {
     expect(list.every((i: { connected: boolean }) => !i.connected)).toBe(true);
 
     const secret = 'Sup3r-Secret-Value-991';
-    const live = await a.req('POST', '/api/settings/integrations/sms', {
+    const live = await a.req('POST', '/api/settings/integrations/accounting', {
       username: 'school-sms',
       secret,
       mode: 'live',
     });
     expect(live.statusCode).toBe(400);
-    const r = await a.req('POST', '/api/settings/integrations/sms', {
+    const r = await a.req('POST', '/api/settings/integrations/accounting', {
       username: 'school-sms',
       secret,
       mode: 'test',
@@ -229,7 +229,7 @@ describe('integrations (demo חיבורים)', () => {
     });
     const scan = (await new Agent(ctx.app).req('GET', `/api/test/scan?needle=${secret}`)).json();
     expect(scan.hits).toEqual([]);
-    const row = await ctx.deps.db.integration.findUniqueOrThrow({ where: { key: 'sms' } });
+    const row = await ctx.deps.db.integration.findUniqueOrThrow({ where: { key: 'accounting' } });
     expect(JSON.parse(ctx.deps.enc.decrypt(row.configEnc!))).toEqual({ username: 'school-sms', secret });
     expect(ctx.logs.join('')).not.toContain(secret);
 
@@ -237,11 +237,13 @@ describe('integrations (demo חיבורים)', () => {
     expect(t).toMatchObject({ ok: true });
     expect(t.messageHe).toContain('מצב בדיקה');
     expect(
-      (await a.req('POST', '/api/settings/integrations/sms/disconnect')).json().integration.connected,
+      (await a.req('POST', '/api/settings/integrations/accounting/disconnect')).json().integration.connected,
     ).toBe(false);
-    expect((await ctx.deps.db.integration.findUniqueOrThrow({ where: { key: 'sms' } })).configEnc).toBeNull();
+    expect(
+      (await ctx.deps.db.integration.findUniqueOrThrow({ where: { key: 'accounting' } })).configEnc,
+    ).toBeNull();
     expect((await a.req('POST', '/api/settings/integrations/nope/test')).statusCode).toBe(400);
-    await expect(ctx.deps.db.integration.delete({ where: { key: 'sms' } })).rejects.toThrow();
+    await expect(ctx.deps.db.integration.delete({ where: { key: 'accounting' } })).rejects.toThrow();
   });
 });
 

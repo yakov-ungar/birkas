@@ -363,8 +363,10 @@ export async function notifyParent(
 ) {
   const { db } = deps;
   const f = await db.family.findUniqueOrThrow({ where: { id: familyId } });
-  const channel = f.phone ? 'sms' : 'email';
+  // Email unless text messaging is on (stage 9). A family without email gets a phone call instead.
+  const channel = (await getSettings(db)).textMessaging && f.phone ? 'sms' : 'email';
   const batch = await newBatch(db, {
+    at: deps.clock.now(),
     channel,
     source: 'manual',
     template: text,

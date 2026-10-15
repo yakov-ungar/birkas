@@ -51,17 +51,19 @@ test('stage 7: reports with CSV, general settings, a connection and opening a ne
 
   // A connection: stored encrypted, test mode only.
   await page.getByRole('tab', { name: 'חיבורים' }).click();
-  const sms = page.getByRole('row', { name: /שירות SMS/ });
-  await expect(sms).toContainText('לא מחובר');
-  await sms.getByRole('button', { name: 'הגדרה' }).click();
-  const c = page.getByRole('dialog', { name: 'חיבור שירות SMS' });
-  await c.getByLabel('מפתח / שם משתמש').fill('school-sms');
+  // Email only (stage 9): SMS is shown as not in use.
+  await expect(page.getByRole('row', { name: /שירות SMS/ })).toContainText('לא בשימוש');
+  const acc = page.getByRole('row', { name: /תוכנת הנהלת חשבונות/ });
+  await expect(acc).toContainText('לא מחובר');
+  await acc.getByRole('button', { name: 'הגדרה' }).click();
+  const c = page.getByRole('dialog', { name: 'חיבור תוכנת הנהלת חשבונות' });
+  await c.getByLabel('מפתח / שם משתמש').fill('school-acc');
   await c.getByLabel('סוד / סיסמה').fill('a-secret-value');
   await c.getByRole('button', { name: 'חיבור' }).click();
   await expect(page.getByRole('dialog', { name: 'החיבור הוגדר' })).toBeVisible();
   await page.getByRole('button', { name: 'סגירה' }).click();
-  await expect(sms).toContainText('מחובר');
-  await expect(sms).toContainText('מצב בדיקה');
+  await expect(acc).toContainText('מחובר');
+  await expect(acc).toContainText('מצב בדיקה');
   await page
     .getByRole('row', { name: /חברת סליקה/ })
     .getByRole('button', { name: 'בדיקת חיבור' })

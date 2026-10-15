@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { israelDate } from '../src/lib/clock';
 import { dispatch, runDailyReminders } from '../src/modules/messages/service';
 import { runDueCharges } from '../src/modules/plans/service';
-import { makeApp, signedIn, type Agent, type TestCtx } from './helpers';
+import { makeApp, setSettings, signedIn, type Agent, type TestCtx } from './helpers';
 import { addStudent, key, mockCard, newFamily, openCash, pay, cash } from './finance-helpers';
 
 let ctx: TestCtx;
@@ -16,6 +16,8 @@ async function jump(to: Date) {
 
 beforeEach(async () => {
   ctx = await makeApp();
+  // These tests cover SMS and WhatsApp, which the school switched off by default (stage 9).
+  await setSettings(ctx, { textMessaging: true });
   ctx.deps.clock.set(il('2026-10-14T10:00:00')); // a Wednesday, inside allowed hours
   a = (await signedIn(ctx)).agent;
 });

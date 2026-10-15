@@ -17,6 +17,8 @@ export const generalSettingsSchema = z.object({
   backupFrequency: z.enum(['daily', 'weekly']),
   /** Grade list in order; the last one graduates when a new year opens (decision C3). */
   grades: z.array(z.string().trim().min(1).max(20)).min(1).max(20),
+  /** Stage 9: the school sends email only. SMS and WhatsApp stay available behind this switch. */
+  textMessaging: z.boolean(),
 });
 export type GeneralSettings = z.infer<typeof generalSettingsSchema>;
 
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: AllSettings = {
   autoRunTime: '02:00',
   backupFrequency: 'daily',
   grades: ["א'", "ב'", "ג'", "ד'", "ה'", "ו'"],
+  textMessaging: false,
   require2fa: true,
   idleTimeoutMin: 30,
   minPasswordLength: 10,
