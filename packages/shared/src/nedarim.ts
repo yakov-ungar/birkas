@@ -11,7 +11,10 @@ export const nedarimStartSchema = z
     familyId: id.optional(),
     studentId: id.optional(),
     amountAgorot: amount,
-    allocations: z.array(z.object({ studentId: id, amountAgorot: z.number().int().min(0) }).strict()).max(20).optional(),
+    allocations: z
+      .array(z.object({ studentId: id, amountAgorot: z.number().int().min(0) }).strict())
+      .max(20)
+      .optional(),
   })
   .strict()
   .refine((v) => !!v.familyId !== !!v.studentId, { message: 'יש לבחור משפחה או תלמיד', path: ['familyId'] });

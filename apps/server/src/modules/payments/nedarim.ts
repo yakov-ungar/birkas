@@ -134,7 +134,9 @@ export async function handleCallback(
   ip: string,
 ): Promise<{ ok: boolean }> {
   const { db, clock } = deps;
-  const allowed = deps.config.NEDARIM_CALLBACK_IPS.split(',').map((s) => s.trim()).filter(Boolean);
+  const allowed = deps.config.NEDARIM_CALLBACK_IPS.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (!allowed.includes(ip)) {
     log.warn({ ip }, 'nedarim callback from an address not allowed');
     throw new AppError(403, 'forbidden', 'forbidden');
@@ -155,7 +157,11 @@ export async function handleCallback(
     await db.$transaction(async (tx) => {
       await tx.cardTransaction.update({
         where: { id: intent.cardTxnId },
-        data: { status: 'declined', errorMessageHe: cb.message ?? 'החיוב נכשל', providerTxnId: cb.transactionId },
+        data: {
+          status: 'declined',
+          errorMessageHe: cb.message ?? 'החיוב נכשל',
+          providerTxnId: cb.transactionId,
+        },
       });
       await tx.nedarimIntent.update({
         where: { id: intent.id },
@@ -182,7 +188,11 @@ export async function handleCallback(
       where: { id: intent.cardTxnId },
       data: { status: 'approved', providerTxnId: cb.transactionId, approvalCode: cb.confirmation },
     });
-    const ref = ['נדרים פלוס', cb.last4 ? `****${cb.last4}` : null, cb.confirmation ? `אישור ${cb.confirmation}` : null]
+    const ref = [
+      'נדרים פלוס',
+      cb.last4 ? `****${cb.last4}` : null,
+      cb.confirmation ? `אישור ${cb.confirmation}` : null,
+    ]
       .filter(Boolean)
       .join(' · ');
     const { payment } = await recordPayment(tx, now, actor, {
@@ -245,7 +255,10 @@ export async function nedarimRoutes(app: FastifyInstance) {
   app.post('/api/portal/pay/nedarim', { config: portal }, async (req) => {
     const p = requireParent(req);
     const input = parse(portalNedarimStartSchema, req.body);
-    const kids = await db.student.findMany({ where: { familyId: p.familyId, deletedAt: null }, orderBy: { enrollSeq: 'asc' } });
+    const kids = await db.student.findMany({
+      where: { familyId: p.familyId, deletedAt: null },
+      orderBy: { enrollSeq: 'asc' },
+    });
     if (!kids.length) throw notFound('המשפחה לא נמצאה');
     const bal = await balancesOf(
       db,
