@@ -6,7 +6,8 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 t="$(mktemp -d)"
 pids=()
-# shellcheck disable=SC2329 # called by the trap
+# Called by the trap (SC2317 in older shellcheck, SC2329 in newer).
+# shellcheck disable=SC2317,SC2329
 cleanup() { for p in "${pids[@]}"; do kill "$p" 2>/dev/null || true; done; rm -rf "$t"; }
 trap cleanup EXIT
 step() { printf '\n== %s\n' "$*"; }

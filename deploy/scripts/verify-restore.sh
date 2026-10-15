@@ -20,8 +20,12 @@ fi
 
 work="$(mktemp -d)"
 pid=""
-# shellcheck disable=SC2329 # called by the trap
-cleanup() { [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true; rm -rf "$work"; }
+# Called by the trap (SC2317 in older shellcheck, SC2329 in newer).
+# shellcheck disable=SC2317,SC2329
+cleanup() {
+  if [[ -n "$pid" ]]; then kill "$pid" 2>/dev/null || true; fi
+  rm -rf "$work"
+}
 trap cleanup EXIT
 
 age --decrypt -i "$identity" -o "$work/tuition.db" "$backup"
