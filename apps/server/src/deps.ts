@@ -15,6 +15,8 @@ export interface Deps {
   enc: Encryptor;
   payments: PaymentProvider;
   texts: TextChannels;
+  /** Outgoing HTTP (voice calls). Tests replace it; nothing else calls outside. */
+  http: typeof fetch;
 }
 
 export function createDeps<C extends Clock>(
@@ -23,13 +25,16 @@ export function createDeps<C extends Clock>(
   clock: C,
   overrides: Partial<Omit<Deps, 'clock'>> = {},
 ): Deps & { clock: C } {
+  const http = overrides.http ?? fetch;
+  const enc = overrides.enc ?? new Encryptor(config.APP_ENCRYPTION_KEY);
   return {
     config,
     db,
     mailer: createMailer(db, config),
-    enc: new Encryptor(config.APP_ENCRYPTION_KEY),
+    enc,
     payments: createPaymentProvider(config),
-    texts: createTextChannels(),
+    texts: createTextChannels(db, enc, http),
+    http,
     ...overrides,
     clock,
   };

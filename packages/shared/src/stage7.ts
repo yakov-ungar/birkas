@@ -95,6 +95,7 @@ export const INTEGRATIONS = {
   card: 'חברת סליקה (אשראי)',
   masav: 'בנק - קבצי מס״ב',
   sms: 'שירות SMS',
+  voice: 'שיחות קוליות (ימות המשיח)',
   whatsapp: 'וואטסאפ עסקי',
   email: 'דואר אלקטרוני (SMTP)',
   accounting: 'תוכנת הנהלת חשבונות',
@@ -116,8 +117,14 @@ export const integrationConfigSchema = z
   .object({
     username: z.string().trim().min(1, 'שדה חובה').max(200),
     secret: z.string().min(1, 'שדה חובה').max(500),
-    /** Production stays closed until a real provider is chosen and approved (plan stage 9). */
-    mode: z.literal('test'),
+    /** "live" exists only for services with a real provider (today: voice calls). */
+    mode: z.enum(['test', 'live']),
+    /** Voice calls: the number shown to the parent (optional; the system's default otherwise). */
+    callerId: z
+      .string()
+      .trim()
+      .regex(/^0\d{8,9}$/, 'מספר טלפון לא תקין')
+      .optional(),
   })
   .strict();
 

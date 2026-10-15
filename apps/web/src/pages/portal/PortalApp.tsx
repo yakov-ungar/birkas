@@ -114,10 +114,12 @@ function Login({ notice, onDone }: { notice: string | null; onDone: () => Promis
   const [busy, setBusy] = useState(false);
   const options = useQuery({
     queryKey: ['portal-login-options'],
-    queryFn: () => get<{ textMessaging: boolean }>('/api/portal/login/options'),
+    queryFn: () => get<{ textMessaging: boolean; voice: boolean }>('/api/portal/login/options'),
   });
-  // Stage 9: email only unless the school switched text messaging on.
+  // Stage 9: email, and by phone a ימות המשיח voice call (or SMS if the school switched it on).
   const sms = !!options.data?.textMessaging;
+  const byPhone = sms ? 'ב-SMS' : options.data?.voice ? 'בשיחה קולית' : null;
+  const typedEmail = contact.includes('@');
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -130,7 +132,7 @@ function Login({ notice, onDone }: { notice: string | null; onDone: () => Promis
       setBusy(false);
     }
   };
-  const start = (channel: 'sms' | 'email' = sms ? 'sms' : 'email') =>
+  const start = (channel: 'sms' | 'email' = 'email') =>
     run(async () => {
       setChallenge(
         await post<PortalLoginStart>(
@@ -160,25 +162,14 @@ function Login({ notice, onDone }: { notice: string | null; onDone: () => Promis
           >
             {link ? (
               <>
-                <p>{sms ? 'נשלח קוד כניסה לטלפון הרשום אצלנו.' : 'נשלח קוד כניסה למייל הרשום אצלנו.'}</p>
+                <p>{byPhone ? 'איך לשלוח את קוד הכניסה?' : 'נשלח קוד כניסה למייל הרשום אצלנו.'}</p>
                 <div className="row">
-                  {sms ? (
-                    <>
-                      <button className="b" type="submit" disabled={busy}>
-                        שליחת קוד ב-SMS
-                      </button>
-                      <button
-                        className="b s"
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void start('email')}
-                      >
-                        שליחה למייל
-                      </button>
-                    </>
-                  ) : (
-                    <button className="b" type="submit" disabled={busy || options.isLoading}>
-                      שליחת קוד למייל
+                  <button className="b" type="submit" disabled={busy || options.isLoading}>
+                    שליחת קוד למייל
+                  </button>
+                  {byPhone && (
+                    <button className="b s" type="button" disabled={busy} onClick={() => void start('sms')}>
+                      קבלת הקוד {byPhone}
                     </button>
                   )}
                 </div>
@@ -218,7 +209,9 @@ function Login({ notice, onDone }: { notice: string | null; onDone: () => Promis
                 ? `שלחנו קוד בן 6 ספרות אל ${challenge.sentTo}.`
                 : sms
                   ? 'אם הפרטים רשומים אצלנו, נשלח אליהם קוד בן 6 ספרות.'
-                  : 'אם הפרטים רשומים אצלנו, נשלח קוד בן 6 ספרות למייל של המשפחה.'}{' '}
+                  : !typedEmail && byPhone
+                    ? `אם הפרטים רשומים אצלנו, תקבלו קוד בן 6 ספרות ${byPhone} לטלפון.`
+                    : 'אם הפרטים רשומים אצלנו, נשלח קוד בן 6 ספרות למייל של המשפחה.'}{' '}
               הקוד בתוקף 10 דקות.
             </p>
             <Field

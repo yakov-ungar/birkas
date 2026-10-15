@@ -18,6 +18,7 @@ import { getSettings, saveSettings } from './service';
 import { openYear, previewYear, yearInfo } from '../year/service';
 import type { Deps } from '../../deps';
 import type { Integration } from '@prisma/client';
+import { YemotVoice } from '../../providers/messaging/yemot';
 
 const keyParam = z.object({
   key: z.enum(Object.keys(INTEGRATIONS) as [IntegrationKey, ...IntegrationKey[]]),
@@ -34,7 +35,9 @@ function providerOf(deps: Deps, key: IntegrationKey, textMessaging: boolean): st
     case 'whatsapp':
       return textMessaging
         ? 'ספק מדומה, לא נשלחות הודעות אמיתיות'
-        : 'לא בשימוש: המערכת שולחת הודעות במייל בלבד';
+        : 'לא בשימוש: SMS מוחלף בשיחה קולית, וואטסאפ במייל';
+    case 'voice':
+      return 'ימות המשיח: הודעה מוקראת לטלפון של ההורה (במקום SMS). שיחות יוצאות רק במצב ייצור';
     case 'email':
       return deps.config.MAIL_TRANSPORT === 'smtp' ? 'שרת SMTP מהגדרות השרת' : 'תיבת יוצא פנימית (בדיקה)';
     case 'accounting':
@@ -134,6 +137,13 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
         messageHe: `${INTEGRATIONS[key]}: ${v.messageHe}. נשלח מייל בדיקה אל ${req.auth!.user.email}`,
       };
     }
+    if (key === 'voice') {
+      // Checks the stored ימות המשיח credentials (no call is placed). Only when someone presses the button.
+      if (!i.configEnc) return { ok: false, messageHe: `${INTEGRATIONS[key]}: השירות עוד לא הוגדר` };
+      const c = JSON.parse(deps.enc.decrypt(i.configEnc)) as { username: string; secret: string };
+      const r = await new YemotVoice({ username: c.username, password: c.secret }, deps.http).check();
+      return { ok: r.ok, messageHe: `${INTEGRATIONS[key]}: ${r.messageHe}` };
+    }
     // No real provider exists yet: say what is running instead of pretending to connect.
     const { textMessaging } = await getSettings(db);
     return { ok: true, messageHe: `${INTEGRATIONS[key]}: ${providerOf(deps, key, textMessaging)}` };
@@ -146,8 +156,11 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
     const { textMessaging } = await getSettings(db);
     if ((key === 'sms' || key === 'whatsapp') && !textMessaging)
       throw badRequest(
-        'השירות לא בשימוש: המערכת שולחת הודעות במייל בלבד. אפשר להפעיל SMS ווואטסאפ בהגדרות הכלליות',
+        'השירות לא בשימוש: SMS מוחלף בשיחה קולית (ימות המשיח) ווואטסאפ במייל. אפשר להפעיל אותם בהגדרות הכלליות',
       );
+    // Production mode only where a real provider exists (voice calls); everything else stays a mock.
+    if (input.mode === 'live' && key !== 'voice')
+      throw badRequest('מצב ייצור זמין כרגע רק לשיחות הקוליות (ימות המשיח)', { mode: 'לא זמין' });
     const now = clock.now();
     const visible =
       input.username.length > 4 ? `${input.username.slice(0, 2)}***${input.username.slice(-2)}` : '***';
@@ -157,8 +170,10 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
         data: {
           connected: true,
           mode: input.mode,
-          configEnc: deps.enc.encrypt(JSON.stringify({ username: input.username, secret: input.secret })),
-          details: `משתמש ${visible} · מצב בדיקה`,
+          configEnc: deps.enc.encrypt(
+            JSON.stringify({ username: input.username, secret: input.secret, callerId: input.callerId }),
+          ),
+          details: `${key === 'voice' ? 'מערכת' : 'משתמש'} ${visible} · ${input.mode === 'live' ? 'מצב ייצור' : 'מצב בדיקה'}`,
           updatedAt: now,
           updatedByName: req.auth!.user.name,
         },

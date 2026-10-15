@@ -36,7 +36,7 @@ describe('email only (stage 9: the school uses no SMS and no WhatsApp)', () => {
         template: 'x {יתרה}',
       });
       expect(g.statusCode).toBe(400);
-      expect(g.json().error.message).toContain('מייל בלבד');
+      expect(g.json().error.message).toContain('כבויים');
       expect(
         (await a.req('POST', `/api/families/${f.familyId}/statement/send`, { channel: ch })).statusCode,
       ).toBe(400);
@@ -87,7 +87,10 @@ describe('email only (stage 9: the school uses no SMS and no WhatsApp)', () => {
   it('portal codes go to the family email, also when the parent types the phone number', async () => {
     const f = await cohen();
     const p = new Agent(ctx.app);
-    expect((await p.req('GET', '/api/portal/login/options')).json()).toEqual({ textMessaging: false });
+    expect((await p.req('GET', '/api/portal/login/options')).json()).toEqual({
+      textMessaging: false,
+      voice: false,
+    });
     const s = (await p.req('POST', '/api/portal/login/start', { contact: '050-1111111' })).json();
     expect(s.sentTo).toBeNull();
     const mail = (await mailsTo('cohen@example.com'))[0]!;
@@ -142,7 +145,7 @@ describe('email only (stage 9: the school uses no SMS and no WhatsApp)', () => {
   it('SMS and WhatsApp connections are "not in use" and cannot be set up', async () => {
     const list = (await a.req('GET', '/api/settings/integrations')).json().integrations;
     const sms = list.find((i: { key: string }) => i.key === 'sms');
-    expect(sms.provider).toBe('לא בשימוש: המערכת שולחת הודעות במייל בלבד');
+    expect(sms.provider).toBe('לא בשימוש: SMS מוחלף בשיחה קולית, וואטסאפ במייל');
     const r = await a.req('POST', '/api/settings/integrations/whatsapp', {
       username: 'x',
       secret: 'y',

@@ -17,6 +17,7 @@ import { randomToken, sha256 } from '../../lib/crypto';
 import { getSettings } from '../settings/service';
 import { israelDate } from '../../lib/clock';
 import { recordAudit } from '../audit/service';
+import { voiceLive } from '../messages/service';
 import { clearSessionCookie, createSession, upgradeSession } from './session';
 
 const LOCK_MINUTES = 15;
@@ -212,6 +213,7 @@ export async function authRoutes(app: FastifyInstance) {
           yearName: s.activeYearName,
           grades: s.grades,
           textMessaging: s.textMessaging,
+          voice: await voiceLive(db),
         },
         idleTimeoutMin: s.idleTimeoutMin,
         testMode: deps.config.ENABLE_TEST_ROUTES && deps.config.NODE_ENV !== 'production',

@@ -485,7 +485,12 @@ describe('parent requests and their approval (demo reqApprove, C11, C12)', () =>
     expect(
       (await a.req('POST', `/api/requests/${d.id}/reject`, { reason: 'לא עומד בקריטריונים' })).statusCode,
     ).toBe(200);
-    expect(await lastText('0527777777')).toBe('בקשת ההנחה שלך נדחתה. סיבה: לא עומד בקריטריונים');
+    // Email first when the family has one (stage 9); SMS only for a family without email.
+    const mail = await ctx.deps.db.outbox.findFirstOrThrow({
+      where: { to: 'new@example.com' },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(mail.text).toBe('בקשת ההנחה שלך נדחתה. סיבה: לא עומד בקריטריונים');
     const mine = (await p.req('GET', '/api/portal/me')).json().requests[0];
     expect(mine).toMatchObject({ status: 'rejected', rejectReason: 'לא עומד בקריטריונים' });
     const actions = (await ctx.deps.db.auditLog.findMany()).map((x) => x.action);

@@ -21,7 +21,7 @@ export const portalLoginStartSchema = z
     contact: text(200).min(3, 'יש להזין טלפון או מייל').optional(),
     /** Signed link from a message ({קישור}); identifies the family without typing. */
     link: z.string().min(10).max(300).optional(),
-    channel: z.enum(['sms', 'email']).default('sms'),
+    channel: z.enum(['sms', 'email', 'voice']).default('sms'),
   })
   .strict()
   .refine((v) => !!v.contact !== !!v.link, { message: 'יש להזין טלפון או מייל', path: ['contact'] });

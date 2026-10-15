@@ -12,8 +12,13 @@ import { getSettings } from '../settings/service';
 import { badRequest } from '../../lib/errors';
 import { signPortalLink } from '../portal/session';
 
-export type Channel = 'sms' | 'whatsapp' | 'email';
-export const CHANNEL_LABEL: Record<Channel, string> = { sms: 'SMS', whatsapp: 'וואטסאפ', email: 'מייל' };
+export type Channel = 'sms' | 'whatsapp' | 'email' | 'voice';
+export const CHANNEL_LABEL: Record<Channel, string> = {
+  sms: 'SMS',
+  whatsapp: 'וואטסאפ',
+  email: 'מייל',
+  voice: 'שיחה קולית',
+};
 export type RuleKey = 'pre_charge' | 'charge_failed' | 'debt_30' | 'receipt_auto';
 
 /** Decision C13: the debt reminder goes to a family at most once in this many days. */
@@ -52,17 +57,39 @@ export async function familyVars(
   };
 }
 
-/** The channel actually used: email unless text messaging is switched on in settings (stage 9). */
+/** Voice calls are available when the ימות המשיח connection is set up in production mode. */
+export async function voiceLive(db: Db | Tx): Promise<boolean> {
+  const i = await db.integration.findUnique({ where: { key: 'voice' } });
+  return !!i?.connected && i.mode === 'live' && !!i.configEnc;
+}
+
+/**
+ * The channel actually used (stage 9): while text messaging is off, SMS becomes a voice call
+ * (ימות המשיח) and WhatsApp becomes email. Without a live voice connection, SMS falls back to email.
+ */
 export async function effectiveChannel(db: Db | Tx, ch: Channel): Promise<Channel> {
-  return (await getSettings(db)).textMessaging ? ch : 'email';
+  if ((await getSettings(db)).textMessaging) return ch === 'voice' && !(await voiceLive(db)) ? 'email' : ch;
+  if (ch === 'whatsapp') return 'email';
+  if (ch === 'sms' || ch === 'voice') return (await voiceLive(db)) ? 'voice' : 'email';
+  return ch;
+}
+
+/** Channels a staff member may choose now. */
+export async function allowedChannels(db: Db | Tx): Promise<Channel[]> {
+  const out: Channel[] = (await getSettings(db)).textMessaging ? ['sms', 'whatsapp'] : [];
+  if (await voiceLive(db)) out.push('voice');
+  return [...out, 'email'];
 }
 
 /** Manual sends must not ask for a channel that is switched off. */
 export async function assertChannel(db: Db | Tx, ch: Channel) {
-  if (ch !== 'email' && !(await getSettings(db)).textMessaging)
-    throw badRequest('המערכת מוגדרת לשליחה במייל בלבד. אפשר להפעיל SMS ווואטסאפ בהגדרות', {
-      channel: 'ערוץ לא פעיל',
-    });
+  if (!(await allowedChannels(db)).includes(ch))
+    throw badRequest(
+      ch === 'voice'
+        ? 'שירות השיחות הקוליות (ימות המשיח) אינו מחובר. אפשר לחבר אותו במסך החיבורים'
+        : 'SMS ווואטסאפ כבויים: ההודעות יוצאות במייל או בשיחה קולית',
+      { channel: 'ערוץ לא פעיל' },
+    );
 }
 
 /** A rule, with the channel it really sends on. */
@@ -151,7 +178,7 @@ export async function dispatch(deps: Deps, log?: FastifyBaseLogger) {
         await deps.mailer.send({ to: m.to, subject: 'הודעה מבית הספר', text: m.body });
         await db.message.update({ where: { id: m.id }, data: { status: 'sent', sentAt: now } });
       } else {
-        const r = await deps.texts[m.channel as 'sms' | 'whatsapp'].send(m.to, m.body);
+        const r = await deps.texts[m.channel as 'sms' | 'whatsapp' | 'voice'].send(m.to, m.body);
         await db.message.update({
           where: { id: m.id },
           data: r.ok

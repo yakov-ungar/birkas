@@ -133,6 +133,7 @@ export function GeneralModal({ s, onClose }: { s: AllSettings; onClose: () => vo
 
 export function Integrations() {
   const toast = useToast();
+  const { refresh } = useAuth();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<IntegrationRow | null>(null);
   const [disconnecting, setDisconnecting] = useState<IntegrationRow | null>(null);
@@ -224,6 +225,7 @@ export function Integrations() {
                 onClick={async () => {
                   await post(`/api/settings/integrations/${disconnecting.key}/disconnect`);
                   await reload();
+                  await refresh();
                   setDisconnecting(null);
                   toast(`נותק: ${disconnecting.name}`);
                 }}
@@ -265,22 +267,33 @@ function IntegrationModal({
   onClose: () => void;
   onDone: () => Promise<void>;
 }) {
+  const voice = x.key === 'voice';
+  const { refresh } = useAuth();
   const [username, setUsername] = useState('');
   const [secret, setSecret] = useState('');
+  const [mode, setMode] = useState<'test' | 'live'>('test');
+  const [callerId, setCallerId] = useState('');
   return (
     <FormModal
       title={`חיבור ${x.name}`}
       submitLabel="חיבור"
       onCancel={onClose}
       onSubmit={async () => {
-        await post(`/api/settings/integrations/${x.key}`, { username, secret, mode: 'test' });
+        await post(`/api/settings/integrations/${x.key}`, {
+          username,
+          secret,
+          mode,
+          ...(voice && callerId.trim() ? { callerId: callerId.trim() } : {}),
+        });
+        // Staff screens offer "שיחה קולית" once the voice connection is live.
+        if (voice) await refresh();
         await onDone();
       }}
     >
       {(fe) => (
         <>
           <Field
-            label="מפתח / שם משתמש"
+            label={voice ? 'מספר המערכת בימות המשיח' : 'מפתח / שם משתמש'}
             dir="ltr"
             autoComplete="off"
             value={username}
@@ -288,7 +301,7 @@ function IntegrationModal({
             error={fe.username}
           />
           <Field
-            label="סוד / סיסמה"
+            label={voice ? 'סיסמת המערכת' : 'סוד / סיסמה'}
             type="password"
             dir="ltr"
             autoComplete="new-password"
@@ -296,12 +309,28 @@ function IntegrationModal({
             onChange={(e) => setSecret(e.target.value)}
             error={fe.secret}
           />
-          <SelectField label="מצב" value="test" onChange={() => {}}>
-            <option value="test">בדיקה</option>
-            <option value="live" disabled>
-              ייצור (ייפתח אחרי בחירת ספק אמיתי)
+          {voice && (
+            <Field
+              label="מספר מזוהה להורים (לא חובה)"
+              dir="ltr"
+              inputMode="tel"
+              value={callerId}
+              onChange={(e) => setCallerId(e.target.value)}
+              error={fe.callerId}
+            />
+          )}
+          <SelectField label="מצב" value={mode} onChange={(e) => setMode(e.target.value as 'test' | 'live')}>
+            <option value="test">בדיקה{voice ? ' (לא מתבצעות שיחות)' : ''}</option>
+            <option value="live" disabled={!voice}>
+              {voice ? 'ייצור (שיחות אמיתיות להורים)' : 'ייצור (ייפתח אחרי בחירת ספק אמיתי)'}
             </option>
           </SelectField>
+          {voice && (
+            <p className="mu" style={{ gridColumn: '1 / -1' }}>
+              במצב ייצור, הודעות שהיו נשלחות ב-SMS מוקראות להורה בשיחה. קישורים לא מוקראים, ונשלחים במייל או
+              בפורטל.
+            </p>
+          )}
         </>
       )}
     </FormModal>

@@ -11,6 +11,8 @@ import { badRequest, parse, unauthorized } from '../../lib/errors';
 import { safeEqual, sha256 } from '../../lib/crypto';
 import { recordAudit } from '../audit/service';
 import { getSettings } from '../settings/service';
+import { voiceLive } from '../messages/service';
+import { codeForSpeech } from '../../providers/messaging/yemot';
 import {
   OTP_MAX_ATTEMPTS,
   OTP_MINUTES,
@@ -40,6 +42,7 @@ export async function portalAuthRoutes(app: FastifyInstance) {
   /** Which channels the sign-in screen may offer (stage 9: email only unless text messaging is on). */
   app.get('/api/portal/login/options', { config: { access: PUBLIC, rateLimit: PORTAL_LIMIT } }, async () => ({
     textMessaging: (await getSettings(db)).textMessaging,
+    voice: await voiceLive(db),
   }));
 
   /**
@@ -53,7 +56,8 @@ export async function portalAuthRoutes(app: FastifyInstance) {
       const input = parse(portalLoginStartSchema, req.body);
       const now = clock.now();
       let familyId: string | null = null;
-      let channel: 'sms' | 'email' = 'sms';
+      // What the parent asked for: email, or a phone channel (sms/voice both mean by phone).
+      let channel: 'sms' | 'email' | 'voice' = 'sms';
       if (input.link) {
         familyId = verifyPortalLink(deps, input.link, now);
         if (!familyId) throw badRequest('הקישור אינו בתוקף. אפשר להתחבר עם מספר הטלפון או המייל');
@@ -76,13 +80,13 @@ export async function portalAuthRoutes(app: FastifyInstance) {
       const challengeId = newChallengeId();
       const f = familyId ? await db.family.findFirst({ where: { id: familyId, archivedAt: null } }) : null;
       if (!f) return { challengeId, sentTo: null };
+      // Stage 9: "by phone" is a voice call (ימות המשיח) unless SMS is switched on; email otherwise.
       const { textMessaging } = await getSettings(db);
-      if (!textMessaging) {
-        // Stage 9: email only. A typed phone number finds the family; the code goes to its email.
-        channel = 'email';
-        if (!f.email && input.link)
-          throw badRequest('לא רשומה כתובת מייל למשפחה. יש לפנות למזכירות בית הספר');
-      } else if (channel === 'email' && !f.email) channel = 'sms';
+      const byPhone = textMessaging ? 'sms' : (await voiceLive(db)) ? 'voice' : null;
+      if (channel !== 'email') channel = byPhone ?? 'email';
+      if (channel === 'email' && !f.email && byPhone) channel = byPhone;
+      if (channel === 'email' && !f.email && input.link)
+        throw badRequest('לא רשומה כתובת מייל למשפחה. יש לפנות למזכירות בית הספר');
       const to = channel === 'email' ? f.email : normalizePhone(f.phone);
       const recent = await db.parentOtp.count({
         where: { familyId: f.id, createdAt: { gte: new Date(now.getTime() - OTP_WINDOW_MINUTES * 60_000) } },
@@ -105,8 +109,14 @@ export async function portalAuthRoutes(app: FastifyInstance) {
         // Sent directly, not through the message queue: the code must not be kept in message history.
         if (channel === 'email') await deps.mailer.send({ to, subject: 'קוד כניסה לפורטל ההורים', text });
         else {
-          const r = await deps.texts.sms.send(to, text);
-          if (!r.ok) req.log.warn({ familyId: f.id }, 'portal code sms failed');
+          const r =
+            channel === 'voice'
+              ? await deps.texts.voice.send(
+                  to,
+                  `שלום, כאן ${schoolName}. קוד הכניסה לפורטל ההורים הוא: ${codeForSpeech(code)}.`,
+                )
+              : await deps.texts.sms.send(to, text);
+          if (!r.ok) req.log.warn({ familyId: f.id, channel }, 'portal code delivery failed');
         }
       }
       return { challengeId, sentTo: input.link && to ? maskContact(to) : null };
@@ -139,7 +149,7 @@ export async function portalAuthRoutes(app: FastifyInstance) {
       await db.$transaction((tx) =>
         recordAudit(tx, { type: 'parent', id: f.id, name: `הורה: ${f.parentName}`, ip: req.ip }, now, {
           action: 'portal.login',
-          summary: `כניסה לפורטל ההורים (${otp.channel === 'email' ? 'מייל' : 'SMS'}) של ${f.name}`,
+          summary: `כניסה לפורטל ההורים (${{ email: 'מייל', sms: 'SMS', voice: 'שיחה קולית' }[otp.channel] ?? otp.channel}) של ${f.name}`,
           entity: 'Family',
           entityId: f.id,
         }),

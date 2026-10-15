@@ -27,8 +27,9 @@ export function StatementModal({ familyId, after }: { familyId: string; after?: 
   });
   const [sending, setSending] = useState(false);
   const [email, setEmail] = useState('');
-  const [channel, setChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
-  const textMessaging = useChannels().length > 1;
+  const [channel, setChannel] = useState<'email' | 'sms' | 'whatsapp' | 'voice'>('email');
+  const channels = useChannels();
+  const textMessaging = channels.includes('sms');
   const [err, setErr] = useState<string | null>(null);
   const s = q.data;
   const done = () => (after ? open(after) : close());
@@ -89,11 +90,12 @@ export function StatementModal({ familyId, after }: { familyId: string; after?: 
                 <select
                   id="stmt-ch"
                   value={channel}
-                  onChange={(e) => setChannel(e.target.value as 'email' | 'sms' | 'whatsapp')}
+                  onChange={(e) => setChannel(e.target.value as 'email' | 'sms' | 'whatsapp' | 'voice')}
                 >
                   <option value="email">מייל (עם PDF)</option>
                   {textMessaging && <option value="whatsapp">וואטסאפ</option>}
                   {textMessaging && <option value="sms">SMS</option>}
+                  {channels.includes('voice') && <option value="voice">שיחה קולית</option>}
                 </select>
               </div>
               {channel === 'email' && (

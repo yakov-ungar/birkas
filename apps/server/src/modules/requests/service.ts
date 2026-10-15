@@ -23,7 +23,7 @@ import { createDiscount } from '../finance/discount';
 import { createPlan } from '../plans/create';
 import { getSettings } from '../settings/service';
 import { isExpiredOn } from '../cards/service';
-import { dispatch, enqueue, newBatch, portalLink } from '../messages/service';
+import { dispatch, enqueue, newBatch, portalLink, voiceLive } from '../messages/service';
 
 const DAY_MS = 86_400_000;
 const addDays = (iso: string, n: number) => new Date(Date.parse(iso) + n * DAY_MS).toISOString().slice(0, 10);
@@ -363,8 +363,10 @@ export async function notifyParent(
 ) {
   const { db } = deps;
   const f = await db.family.findUniqueOrThrow({ where: { id: familyId } });
-  // Email unless text messaging is on (stage 9). A family without email gets a phone call instead.
-  const channel = (await getSettings(db)).textMessaging && f.phone ? 'sms' : 'email';
+  // Email when the family has one; otherwise by phone: SMS if switched on, else a ימות המשיח call.
+  // With neither, the message is recorded as not sent, and the office calls (stage 9).
+  const byPhone = (await getSettings(db)).textMessaging ? 'sms' : (await voiceLive(db)) ? 'voice' : null;
+  const channel = f.email || !f.phone || !byPhone ? 'email' : byPhone;
   const batch = await newBatch(db, {
     at: deps.clock.now(),
     channel,

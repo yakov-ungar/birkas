@@ -202,6 +202,7 @@ describe('integrations (demo חיבורים)', () => {
       'card',
       'masav',
       'sms',
+      'voice',
       'whatsapp',
       'email',
       'accounting',

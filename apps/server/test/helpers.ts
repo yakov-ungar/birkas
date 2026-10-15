@@ -27,7 +27,13 @@ export interface TestCtx {
   skipIntegrity?: boolean;
 }
 
-export async function makeApp(env: Partial<Record<keyof Config, string>> = {}): Promise<TestCtx> {
+export async function makeApp(
+  env: Partial<Record<keyof Config, string>> = {},
+  /** Replaces outgoing HTTP (voice calls). By default any outside request fails the test. */
+  http: typeof fetch = async (url) => {
+    throw new Error(`unexpected outgoing request in a test: ${String(url)}`);
+  },
+): Promise<TestCtx> {
   const template = inject('templateDb');
   const file = join(dirname(template), `${randomUUID()}.db`);
   copyFileSync(template, file);
@@ -43,7 +49,7 @@ export async function makeApp(env: Partial<Record<keyof Config, string>> = {}): 
   } as NodeJS.ProcessEnv);
   const db = await createDb(config.DATABASE_URL);
   const clock = new TestClock();
-  const deps: TestDeps = createDeps(config, db, clock);
+  const deps: TestDeps = createDeps(config, db, clock, { http });
   const logs: string[] = [];
   const logStream = new Writable({
     write(chunk, _enc, cb) {

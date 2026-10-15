@@ -6,7 +6,7 @@ export interface MeResponse {
   stage: SessionStage;
   csrfToken: string;
   user: { id: string; name: string; email: string; role: string; permissions: Permission[] };
-  school: { name: string; yearName: string; grades: string[]; textMessaging: boolean };
+  school: { name: string; yearName: string; grades: string[]; textMessaging: boolean; voice: boolean };
   idleTimeoutMin: number;
   /** True only on test servers: shows the demo's "advance a month" button. */
   testMode: boolean;

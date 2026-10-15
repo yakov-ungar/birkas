@@ -3,7 +3,8 @@ import { isoDate } from './domain-types';
 
 const text = (max: number) => z.string().trim().max(max);
 
-export const CHANNELS = { sms: 'SMS', whatsapp: 'וואטסאפ', email: 'מייל' } as const;
+/** voice: an automated phone call that reads the message aloud (ימות המשיח), used instead of SMS. */
+export const CHANNELS = { sms: 'SMS', whatsapp: 'וואטסאפ', email: 'מייל', voice: 'שיחה קולית' } as const;
 export type ChannelKey = keyof typeof CHANNELS;
 export const NOTE_TYPES = {
   call: 'שיחה',
@@ -38,7 +39,7 @@ export const noteCreateSchema = z
 
 export const ruleUpdateSchema = z
   .object({
-    channel: z.enum(['sms', 'whatsapp', 'email']),
+    channel: z.enum(['sms', 'whatsapp', 'email', 'voice']),
     enabled: z.boolean(),
     template: text(1000).min(1),
   })
@@ -48,7 +49,7 @@ const group = z.union([z.enum(['all', 'big', 'aged', 'fail']), z.string().regex(
 export const groupSendSchema = z
   .object({
     group,
-    channel: z.enum(['sms', 'whatsapp', 'email']),
+    channel: z.enum(['sms', 'whatsapp', 'email', 'voice']),
     template: text(1000).min(1, 'יש להזין תוכן'),
     expectedCount: z.number().int().positive().optional(),
   })
@@ -56,7 +57,7 @@ export const groupSendSchema = z
 
 export const statementSendSchema = z
   .object({
-    channel: z.enum(['email', 'sms', 'whatsapp']).default('email'),
+    channel: z.enum(['email', 'sms', 'whatsapp', 'voice']).default('email'),
     email: z.string().trim().toLowerCase().email().max(200).optional(),
   })
   .strict()
