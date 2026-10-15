@@ -1,3 +1,4 @@
+import { assertHostedCards } from './nedarim-config';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
@@ -21,7 +22,7 @@ import { payByCard } from './card';
 import type { Deps } from '../../deps';
 
 /** Resolves who the payment is for and how it splits between the kids. */
-async function resolveParts(
+export async function resolveParts(
   deps: Deps,
   input: PaymentCreateInput,
 ): Promise<{ familyId: string; parts: Part[] }> {
@@ -166,6 +167,7 @@ export async function paymentRoutes(app: FastifyInstance) {
     }
 
     // ---------- card ----------
+    await assertHostedCards(deps);
     if (!!d.cardId === !!d.newCard) throw badRequest('יש לבחור כרטיס שמור או להזין כרטיס חדש');
     if (d.newCard?.save && !hasPerm(req, 'cards')) throw forbidden('אין לך הרשאה לשמור כרטיסים');
     return payByCard(deps, req.log, {

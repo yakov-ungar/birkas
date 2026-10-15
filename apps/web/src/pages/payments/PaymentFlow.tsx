@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { PAYMENT_METHODS, formatMoney, type PaymentResult, type SavedCardRow } from '@tuition/shared';
+import {
+  PAYMENT_METHODS,
+  formatMoney,
+  type CardMode,
+  type NedarimStart,
+  type NedarimStatus,
+  type PaymentResult,
+  type SavedCardRow,
+} from '@tuition/shared';
 import { HttpError, get, post } from '../../api/client';
 import { useFamilies, useInvalidateMoney, useStudents } from '../../api/hooks';
 import { useAuth } from '../../app/auth';
@@ -9,6 +17,7 @@ import { Modal } from '../../components/Modal';
 import { Money, MoneyField } from '../../components/Money';
 import { useDialogs } from '../../components/Dialogs';
 import { CardFields, type CardFieldsHandle } from './CardFields';
+import { NedarimFrame, type NedarimFrameHandle } from './NedarimFrame';
 import { ReceiptModal } from '../receipts/ReceiptModal';
 
 type Method = 'card' | 'transfer' | 'cash' | 'check';
@@ -46,6 +55,9 @@ export function PaymentFlow({
   const [cardChoice, setCardChoice] = useState<string>('');
   const [saveCard, setSaveCard] = useState(false);
   const cardRef = useRef<CardFieldsHandle>(null);
+  const nedarimRef = useRef<NedarimFrameHandle>(null);
+  const mode = useQuery({ queryKey: ['card-mode'], queryFn: () => get<CardMode>('/api/payments/card-mode') });
+  const nedarim = mode.data?.mode === 'nedarim' ? mode.data.iframeUrl : null;
 
   const options = useMemo(() => {
     const out: { v: string; t: string }[] = [];
@@ -70,7 +82,7 @@ export function PaymentFlow({
   const who = options.find((o) => o.v === target)?.t.replace(/ \(יתרה.*$/, '') ?? '';
 
   const cards = useQuery({
-    enabled: step === 'details' && method === 'card' && !!familyId,
+    enabled: step === 'details' && method === 'card' && !!familyId && mode.data?.mode === 'hosted',
     queryKey: ['payment-cards', familyId],
     queryFn: () =>
       get<{ cards: SavedCardRow[]; hostedFieldsUrl: string }>(`/api/families/${familyId}/payment-cards`),
@@ -113,6 +125,18 @@ export function PaymentFlow({
     if (alloc && allocSum !== amount) return setErr('סכום החלוקה חייב להיות שווה לסכום התשלום');
     setBusy(true);
     try {
+      const targetBody = isFamily
+        ? {
+            familyId: targetId,
+            allocations: alloc!.map((a) => ({ studentId: a.studentId, amountAgorot: a.amountAgorot })),
+          }
+        : { studentId: targetId };
+      if (method === 'card' && nedarim) {
+        const res = await nedarimRef.current!.pay();
+        await invalidate();
+        open(<PaymentDone result={res} amount={amount!} method={method} who={who} />);
+        return;
+      }
       let details: Record<string, unknown>;
       if (method === 'cash') details = { method, receivedBy: fields.receivedBy ?? '' };
       else if (method === 'transfer')
@@ -134,17 +158,7 @@ export function PaymentFlow({
         const t = await cardRef.current!.tokenize();
         details = { method, newCard: { ...t, save: saveCard } };
       }
-      const body = {
-        idempotencyKey,
-        ...(isFamily
-          ? {
-              familyId: targetId,
-              allocations: alloc!.map((a) => ({ studentId: a.studentId, amountAgorot: a.amountAgorot })),
-            }
-          : { studentId: targetId }),
-        amountAgorot: amount,
-        details,
-      };
+      const body = { idempotencyKey, ...targetBody, amountAgorot: amount, details };
       const res = await post<PaymentResult>('/api/payments', body);
       await invalidate();
       open(<PaymentDone result={res} amount={amount!} method={method} who={who} />);
@@ -246,7 +260,29 @@ export function PaymentFlow({
           <p className="mu">השיק יופיע ביתרה לאחר ההפקדה בתאריך הפירעון.</p>
         </>
       )}
-      {method === 'card' && (
+      {method === 'card' && nedarim && (
+        <NedarimFrame
+          ref={nedarimRef}
+          iframeUrl={nedarim}
+          start={() =>
+            post<NedarimStart>('/api/payments/nedarim', {
+              idempotencyKey,
+              ...(isFamily
+                ? {
+                    familyId: targetId,
+                    allocations: alloc!.map((a) => ({
+                      studentId: a.studentId,
+                      amountAgorot: a.amountAgorot,
+                    })),
+                  }
+                : { studentId: targetId }),
+              amountAgorot: amount,
+            })
+          }
+          status={(id) => get<NedarimStatus>(`/api/payments/nedarim/${id}`)}
+        />
+      )}
+      {method === 'card' && !nedarim && (
         <>
           {cards.isLoading && <p className="mu">טוען כרטיסים...</p>}
           {cards.data && (

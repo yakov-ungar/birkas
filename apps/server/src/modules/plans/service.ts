@@ -1,3 +1,4 @@
+import { NEDARIM_NO_TOKENS, nedarimConfig } from '../payments/nedarim-config';
 import {
   PLAN_METHODS,
   formatMoney,
@@ -193,12 +194,15 @@ export async function chargeInstallment(
           providerTxnId: txn.providerTxnId ?? '',
           approvalCode: txn.approvalCode ?? '',
         }
-      : await deps.payments.chargeToken({
-          token: deps.enc.decrypt(card.tokenEnc),
-          amountAgorot: current.amountAgorot,
-          idempotencyKey: key,
-          description: 'שכר לימוד',
-        });
+      : (await nedarimConfig(deps))
+        ? // With Nedarim Plus live there are no card tokens here to charge (stage 9).
+          { status: 'error' as const, errorMessageHe: NEDARIM_NO_TOKENS }
+        : await deps.payments.chargeToken({
+            token: deps.enc.decrypt(card.tokenEnc),
+            amountAgorot: current.amountAgorot,
+            idempotencyKey: key,
+            description: 'שכר לימוד',
+          });
   if (r.status !== 'approved') {
     if (txn.status === 'pending')
       await db.cardTransaction.update({

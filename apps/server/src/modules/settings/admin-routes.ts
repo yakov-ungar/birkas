@@ -28,7 +28,7 @@ const keyParam = z.object({
 function providerOf(deps: Deps, key: IntegrationKey, textMessaging: boolean): string {
   switch (key) {
     case 'card':
-      return `${deps.payments.name === 'mock' ? 'ספק מדומה' : deps.payments.name} · מצב בדיקה`;
+      return 'נדרים פלוס במצב ייצור: הכרטיס מוזן בחלון של נדרים. במצב בדיקה: ספק מדומה, בלי חיוב אמיתי';
     case 'masav':
       return 'קובץ ידני (לבדיקה בלבד)';
     case 'sms':
@@ -116,6 +116,13 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
     const { key } = parse(keyParam, req.params);
     const i = await db.integration.findUnique({ where: { key } });
     if (!i) throw notFound('השירות לא נמצא');
+    if (key === 'card' && i.connected && i.mode === 'live') {
+      // Nedarim has no "check credentials" call we can use safely; a ₪1 payment is the real test.
+      return {
+        ok: true,
+        messageHe: `${INTEGRATIONS[key]}: נדרים פלוס מוגדר. הבדיקה המלאה היא תשלום ניסיון של ₪1 (docs/DEPLOY.md)`,
+      };
+    }
     if (key === 'card') {
       const r = await deps.payments.testConnection();
       return {
@@ -159,8 +166,8 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
         'השירות לא בשימוש: SMS מוחלף בשיחה קולית (ימות המשיח) ווואטסאפ במייל. אפשר להפעיל אותם בהגדרות הכלליות',
       );
     // Production mode only where a real provider exists (voice calls); everything else stays a mock.
-    if (input.mode === 'live' && key !== 'voice')
-      throw badRequest('מצב ייצור זמין כרגע רק לשיחות הקוליות (ימות המשיח)', { mode: 'לא זמין' });
+    if (input.mode === 'live' && key !== 'voice' && key !== 'card')
+      throw badRequest('מצב ייצור זמין כרגע רק לשיחות הקוליות ולנדרים פלוס', { mode: 'לא זמין' });
     const now = clock.now();
     const visible =
       input.username.length > 4 ? `${input.username.slice(0, 2)}***${input.username.slice(-2)}` : '***';
@@ -173,7 +180,7 @@ export async function settingsAdminRoutes(app: FastifyInstance) {
           configEnc: deps.enc.encrypt(
             JSON.stringify({ username: input.username, secret: input.secret, callerId: input.callerId }),
           ),
-          details: `${key === 'voice' ? 'מערכת' : 'משתמש'} ${visible} · ${input.mode === 'live' ? 'מצב ייצור' : 'מצב בדיקה'}`,
+          details: `${key === 'voice' ? 'מערכת' : key === 'card' ? 'נדרים פלוס, מוסד' : 'משתמש'} ${visible} · ${input.mode === 'live' ? 'מצב ייצור' : 'מצב בדיקה'}`,
           updatedAt: now,
           updatedByName: req.auth!.user.name,
         },

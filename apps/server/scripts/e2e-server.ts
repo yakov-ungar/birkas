@@ -32,6 +32,8 @@ const env = {
   ENABLE_TEST_ROUTES: 'true',
   // All browser tests sign in from 127.0.0.1.
   LOGIN_RATE_LIMIT: '100',
+  // The fake נדרים פלוס callback in the browser tests comes from this machine.
+  NEDARIM_CALLBACK_IPS: '127.0.0.1',
   WEB_DIST: resolve(here, '../../web/dist'),
   LOG_LEVEL: 'info',
 };

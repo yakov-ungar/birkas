@@ -37,6 +37,7 @@ import { requestRoutes } from './modules/requests/routes';
 import { reportRoutes } from './modules/reports/routes';
 import { settingsAdminRoutes } from './modules/settings/admin-routes';
 import { tutoringRoutes } from './modules/tutoring/routes';
+import { nedarimRoutes } from './modules/payments/nedarim';
 import { registerParentAuth } from './plugins/parent';
 import { bodyContainsPan } from './lib/redact';
 import { AppError } from './lib/errors';
@@ -97,7 +98,8 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],
-        frameSrc: ["'self'"],
+        // Nedarim Plus card iframe (card details are typed only there).
+        frameSrc: ["'self'", 'https://www.matara.pro', 'https://matara.pro'],
         frameAncestors: ["'none'"],
       },
     },
@@ -160,6 +162,7 @@ export async function buildApp(deps: Deps, opts: BuildOptions = {}): Promise<Fas
   await app.register(reportRoutes);
   await app.register(settingsAdminRoutes);
   await app.register(tutoringRoutes);
+  await app.register(nedarimRoutes);
   if (config.ENABLE_TEST_ROUTES) await app.register(testRoutes);
 
   if (config.PAYMENT_PROVIDER === 'mock') {

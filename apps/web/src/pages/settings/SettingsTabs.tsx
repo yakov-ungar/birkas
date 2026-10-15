@@ -199,7 +199,8 @@ export function Integrations() {
         </table>
         <p className="mu">
           פרטי החיבור נשמרים מוצפנים. שיחות קוליות דרך ימות המשיח יוצאות רק אחרי שתגדיר אותן במצב ייצור. מייל
-          נשלח דרך שרת המייל של השרת. הסליקה והשאר נשארים במצב בדיקה עד שייבחר ספק אמיתי.
+          נשלח דרך שרת המייל של השרת. סליקת אשראי אמיתית עוברת דרך נדרים פלוס אחרי שתגדיר אותה במצב ייצור.
+          השאר נשארים במצב בדיקה.
         </p>
       </div>
       {editing && (
@@ -209,7 +210,13 @@ export function Integrations() {
           onDone={async () => {
             await reload();
             setEditing(null);
-            setResult({ title: 'החיבור הוגדר', text: 'פרטי החיבור נשמרו מוצפנים, במצב בדיקה.' });
+            const row = (
+              await get<{ integrations: IntegrationRow[] }>('/api/settings/integrations')
+            ).integrations.find((i) => i.key === editing.key);
+            setResult({
+              title: 'החיבור הוגדר',
+              text: `פרטי החיבור נשמרו מוצפנים, ${row?.mode === 'live' ? 'במצב ייצור' : 'במצב בדיקה'}.`,
+            });
           }}
         />
       )}
@@ -268,6 +275,8 @@ function IntegrationModal({
   onDone: () => Promise<void>;
 }) {
   const voice = x.key === 'voice';
+  const card = x.key === 'card';
+  const live = voice || card;
   const { refresh } = useAuth();
   const [username, setUsername] = useState('');
   const [secret, setSecret] = useState('');
@@ -286,14 +295,14 @@ function IntegrationModal({
           ...(voice && callerId.trim() ? { callerId: callerId.trim() } : {}),
         });
         // Staff screens offer "שיחה קולית" once the voice connection is live.
-        if (voice) await refresh();
+        if (live) await refresh();
         await onDone();
       }}
     >
       {(fe) => (
         <>
           <Field
-            label={voice ? 'מספר המערכת בימות המשיח' : 'מפתח / שם משתמש'}
+            label={voice ? 'מספר המערכת בימות המשיח' : card ? 'מספר מוסד בנדרים פלוס' : 'מפתח / שם משתמש'}
             dir="ltr"
             autoComplete="off"
             value={username}
@@ -301,7 +310,7 @@ function IntegrationModal({
             error={fe.username}
           />
           <Field
-            label={voice ? 'סיסמת המערכת' : 'סוד / סיסמה'}
+            label={voice ? 'סיסמת המערכת' : card ? 'ApiValid (מפתח API מנדרים פלוס)' : 'סוד / סיסמה'}
             type="password"
             dir="ltr"
             autoComplete="new-password"
@@ -320,15 +329,27 @@ function IntegrationModal({
             />
           )}
           <SelectField label="מצב" value={mode} onChange={(e) => setMode(e.target.value as 'test' | 'live')}>
-            <option value="test">בדיקה{voice ? ' (לא מתבצעות שיחות)' : ''}</option>
-            <option value="live" disabled={!voice}>
-              {voice ? 'ייצור (שיחות אמיתיות להורים)' : 'ייצור (ייפתח אחרי בחירת ספק אמיתי)'}
+            <option value="test">
+              בדיקה{voice ? ' (לא מתבצעות שיחות)' : card ? ' (סליקת בדיקה פנימית, ללא חיוב)' : ''}
+            </option>
+            <option value="live" disabled={!live}>
+              {voice
+                ? 'ייצור (שיחות אמיתיות להורים)'
+                : card
+                  ? 'ייצור (חיובים אמיתיים בנדרים פלוס)'
+                  : 'ייצור (ייפתח אחרי בחירת ספק אמיתי)'}
             </option>
           </SelectField>
           {voice && (
             <p className="mu" style={{ gridColumn: '1 / -1' }}>
               במצב ייצור, הודעות שהיו נשלחות ב-SMS מוקראות להורה בשיחה. קישורים לא מוקראים, ונשלחים במייל או
               בפורטל.
+            </p>
+          )}
+          {card && (
+            <p className="mu" style={{ gridColumn: '1 / -1' }}>
+              במצב ייצור, הכרטיס מוקלד בטופס של נדרים פלוס ואינו עובר במערכת. שמירת כרטיסים וחיוב הוראות קבע
+              באשראי אינם זמינים במצב זה. לפני השימוש: תשלום ניסיון של ₪1 (ראו README).
             </p>
           )}
         </>

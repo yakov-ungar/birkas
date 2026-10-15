@@ -28,6 +28,8 @@ const envSchema = z
     ALERT_EMAIL: z.string().email().optional(),
     /** Run the in-process scheduler (nightly charges). Off in tests. */
     SCHEDULER_ENABLED: bool.default('true'),
+    /** Addresses Nedarim Plus calls back from; a callback from anywhere else is refused. */
+    NEDARIM_CALLBACK_IPS: z.string().default('18.194.219.73'),
     /** Sign-in attempts per IP per 15 minutes (staff login and 2FA). Raised only for the browser tests. */
     LOGIN_RATE_LIMIT: z.coerce.number().int().min(1).max(1000).default(10),
     /** Test-only time travel and helper routes. Refused in production. */

@@ -1,3 +1,4 @@
+import { assertHostedCards } from '../payments/nedarim-config';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { cardCreateSchema } from '@tuition/shared';
@@ -35,6 +36,7 @@ export async function cardRoutes(app: FastifyInstance) {
   /** Saves a card from the provider's hosted fields without charging it. */
   app.post('/api/cards', { config: { access: staff('cards') } }, async (req) => {
     const { studentId, card } = parse(cardCreateSchema, req.body);
+    await assertHostedCards(deps);
     const s = await db.student.findFirst({ where: { id: studentId, deletedAt: null } });
     if (!s) throw notFound('התלמיד לא נמצא');
     const c = await saveCard(deps, { studentId, card, actor: actorOf(req) });

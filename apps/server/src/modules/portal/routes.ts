@@ -1,3 +1,4 @@
+import { assertHostedCards } from '../payments/nedarim-config';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
@@ -53,6 +54,7 @@ export async function portalRoutes(app: FastifyInstance) {
   app.post('/api/portal/pay', { config: portal }, async (req): Promise<PaymentResult> => {
     const p = requireParent(req);
     const input = parse(portalPaySchema, req.body);
+    await assertHostedCards(deps);
     const existing = await db.payment.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (existing) {
       if (existing.familyId !== p.familyId) throw notFound('התשלום לא נמצא');
@@ -89,6 +91,7 @@ export async function portalRoutes(app: FastifyInstance) {
   app.post('/api/portal/cards', { config: portal }, async (req) => {
     const p = requireParent(req);
     const { studentId, card } = parse(portalCardSchema, req.body);
+    await assertHostedCards(deps);
     const s = await db.student.findFirst({ where: { id: studentId, familyId: p.familyId, deletedAt: null } });
     if (!s) throw notFound('התלמיד לא נמצא');
     const c = await saveCard(deps, { studentId: s.id, card, actor: parentActor(req) });

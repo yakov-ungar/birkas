@@ -1,3 +1,4 @@
+import { assertHostedCards } from '../payments/nedarim-config';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { planCreateSchema, planInputSchema, swapCardSchema, type PlanDetail } from '@tuition/shared';
@@ -104,6 +105,7 @@ export async function planRoutes(app: FastifyInstance) {
 
   app.post('/api/plans', { config: { access: staff('plans') } }, async (req) => {
     const { plan: input, idempotencyKey, consent } = parse(planCreateSchema, req.body);
+    if (input.method === 'card') await assertHostedCards(deps);
     const existing = await db.billingPlan.findUnique({ where: { idempotencyKey } });
     if (existing) return detail(deps, existing.id);
     if (input.method !== 'transfer' && !consent)

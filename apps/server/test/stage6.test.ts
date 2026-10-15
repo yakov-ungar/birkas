@@ -204,12 +204,22 @@ describe('portal: family isolation (stage 6 acceptance)', () => {
     const tried: string[] = [];
     for (const r of routes) {
       const k = `${r.method} ${r.url}`;
-      if (k === 'POST /api/portal/logout' || k === 'GET /api/portal/me') continue;
+      // These take no ids: the family comes from the session alone.
+      if (
+        [
+          'POST /api/portal/logout',
+          'GET /api/portal/me',
+          'GET /api/portal/card-mode',
+          'POST /api/portal/pay/nedarim',
+        ].includes(k)
+      )
+        continue;
       const res = await p.req(r.method, fill(r.url), r.method === 'GET' ? undefined : bodies[k]);
       expect([403, 404], `${k} → ${res.statusCode} ${res.body}`).toContain(res.statusCode);
       tried.push(k);
     }
     expect(tried.sort()).toEqual([
+      'GET /api/portal/pay/nedarim/:id',
       'GET /api/portal/receipts/:id/pdf',
       'POST /api/portal/cards',
       'POST /api/portal/pay',

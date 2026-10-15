@@ -1,19 +1,23 @@
 import { useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   INSTALLMENT_MONTHS,
+  type CardMode,
+  type NedarimStart,
+  type NedarimStatus,
   PREFERRED_METHODS,
   formatMoney,
   type PaymentResult,
   type PortalMe,
 } from '@tuition/shared';
-import { HttpError, post } from '../../api/client';
+import { HttpError, get, post } from '../../api/client';
 import { Field, FormError, SelectField } from '../../components/Field';
 import { Modal } from '../../components/Modal';
 import { MoneyField } from '../../components/Money';
 import { useDialogs } from '../../components/Dialogs';
 import { FormModal } from '../families/StudentActions';
 import { CardFields, type CardFieldsHandle } from '../payments/CardFields';
+import { NedarimFrame, type NedarimFrameHandle } from '../payments/NedarimFrame';
 
 const useRefresh = () => {
   const qc = useQueryClient();
@@ -49,19 +53,27 @@ export function PortalPay({ me }: { me: PortalMe }) {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const cardRef = useRef<CardFieldsHandle>(null);
+  const nedarimRef = useRef<NedarimFrameHandle>(null);
+  const mode = useQuery({
+    queryKey: ['portal-card-mode'],
+    queryFn: () => get<CardMode>('/api/portal/card-mode'),
+  });
+  const nedarim = mode.data?.mode === 'nedarim' ? mode.data.iframeUrl : null;
 
   const submit = async () => {
     setErr(null);
     if (!amount || amount <= 0) return setErr('סכום לא תקין');
     setBusy(true);
     try {
-      const card =
-        choice === 'new' ? { newCard: { ...(await cardRef.current!.tokenize()), save } } : { cardId: choice };
-      const r = await post<PaymentResult>('/api/portal/pay', {
-        amountAgorot: amount,
-        idempotencyKey,
-        ...card,
-      });
+      let r: PaymentResult;
+      if (nedarim) r = await nedarimRef.current!.pay();
+      else {
+        const card =
+          choice === 'new'
+            ? { newCard: { ...(await cardRef.current!.tokenize()), save } }
+            : { cardId: choice };
+        r = await post<PaymentResult>('/api/portal/pay', { amountAgorot: amount, idempotencyKey, ...card });
+      }
       await refresh();
       open(
         <Done title="התשלום התקבל">
@@ -117,24 +129,39 @@ export function PortalPay({ me }: { me: PortalMe }) {
       }
     >
       <MoneyField label="סכום לתשלום (₪)" value={amount} onChange={setAmount} />
-      <SelectField label="כרטיס" value={choice} onChange={(e) => setChoice(e.target.value)}>
-        {usable.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.brand} ****{c.last4} ({c.exp})
-          </option>
-        ))}
-        <option value="new">כרטיס חדש</option>
-      </SelectField>
-      {choice === 'new' && (
+      {mode.isLoading && <p className="mu">טוען...</p>}
+      {nedarim && (
+        <NedarimFrame
+          ref={nedarimRef}
+          iframeUrl={nedarim}
+          start={() =>
+            post<NedarimStart>('/api/portal/pay/nedarim', { amountAgorot: amount, idempotencyKey })
+          }
+          status={(id) => get<NedarimStatus>(`/api/portal/pay/nedarim/${id}`)}
+        />
+      )}
+      {mode.data?.mode === 'hosted' && (
         <>
-          <CardFields ref={cardRef} src={me.hostedFieldsUrl} />
-          <label className="row" style={{ margin: '8px 0 0' }}>
-            <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} /> לשמור את
-            הכרטיס לתשלומים הבאים
-          </label>
+          <SelectField label="כרטיס" value={choice} onChange={(e) => setChoice(e.target.value)}>
+            {usable.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.brand} ****{c.last4} ({c.exp})
+              </option>
+            ))}
+            <option value="new">כרטיס חדש</option>
+          </SelectField>
+          {choice === 'new' && (
+            <>
+              <CardFields ref={cardRef} src={me.hostedFieldsUrl} />
+              <label className="row" style={{ margin: '8px 0 0' }}>
+                <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} /> לשמור את
+                הכרטיס לתשלומים הבאים
+              </label>
+            </>
+          )}
         </>
       )}
-      {me.testMode && <p className="mu">מצב בדיקה: לא מתבצע חיוב אמיתי.</p>}
+      {!nedarim && me.testMode && <p className="mu">מצב בדיקה: לא מתבצע חיוב אמיתי.</p>}
       <FormError message={err} />
     </Modal>
   );

@@ -747,3 +747,33 @@ model TutorCharge {
 
   @@unique([assignmentId, month])
 }
+
+// ---------- נדרים פלוס (card payments in Nedarim's own iframe) ----------
+
+/// A card payment started in our system and completed inside the Nedarim Plus iframe. The card
+/// details go only to Nedarim; their server callback (not the browser) completes the payment here.
+model NedarimIntent {
+  /// Random id, sent to Nedarim as Param1 and echoed back in the callback.
+  id             String    @id
+  familyId       String
+  /// JSON [{studentId, amountAgorot}]: how the payment splits between the children.
+  partsJson      String
+  amountAgorot   Int
+  idempotencyKey String    @unique
+  /// staff | portal
+  source         String
+  createdById    String?
+  /// JSON audit actor of whoever started it.
+  actorJson      String
+  /// pending | paid | failed
+  status         String    @default("pending")
+  cardTxnId      String    @unique
+  paymentId      String?   @unique
+  providerTxnId  String?
+  last4          String?
+  message        String?
+  createdAt      DateTime
+  completedAt    DateTime?
+
+  @@index([familyId])
+}
