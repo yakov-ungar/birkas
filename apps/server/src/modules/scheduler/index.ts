@@ -4,6 +4,7 @@ import { israelDate } from '../../lib/clock';
 import { getSettings } from '../settings/service';
 import { runDueCharges } from '../plans/service';
 import { dispatch, runDailyReminders } from '../messages/service';
+import { monthEndTutoring } from '../tutoring/service';
 
 const HHMM = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Asia/Jerusalem',
@@ -25,6 +26,8 @@ export async function schedulerTick(deps: Deps, log?: FastifyBaseLogger) {
     await runDailyReminders(deps).catch((e) => log?.error({ err: e }, 'reminders run failed'));
   const { autoRunTime } = await getSettings(deps.db);
   if (HHMM.format(now) < autoRunTime) return { ran: false as const };
+  // Private lessons: charged on the last day of the month (with catch-up early next month).
+  await monthEndTutoring(deps).catch((e) => log?.error({ err: e }, 'tutoring month-end failed'));
   const runKey = israelDate(now);
   if (await deps.db.jobRun.findUnique({ where: { job_runKey: { job: 'charges', runKey } } }))
     return { ran: false as const };

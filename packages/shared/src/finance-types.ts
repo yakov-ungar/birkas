@@ -119,7 +119,11 @@ export interface ReceiptRow {
 
 export interface ReceiptView extends ReceiptRow {
   schoolName: string;
-  lines: { studentName: string; amountAgorot: number }[];
+  lines: {
+    studentName: string;
+    amountAgorot: number;
+    items: { description: string; amountAgorot: number }[];
+  }[];
   issuedAt: string;
   printCount: number;
   cancelledBy: number | null;

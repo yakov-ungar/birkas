@@ -11,6 +11,8 @@ export const CHARGE_TYPES = {
   sib: 'הנחת אחים',
   carry: 'יתרה משנה קודמת',
   check_fee: 'עמלת שיק חוזר',
+  /** Private lessons with an אברך, charged at the end of each month. */
+  tutor: 'שיעור פרטי',
 } as const;
 export type ChargeType = keyof typeof CHARGE_TYPES;
 export const CHARGE_TYPE_KEYS = Object.keys(CHARGE_TYPES) as ChargeType[];

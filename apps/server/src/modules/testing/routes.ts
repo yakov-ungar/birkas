@@ -89,6 +89,15 @@ export async function testRoutes(app: FastifyInstance) {
     );
     if (!(clock instanceof TestClock)) throw badRequest('test clock is not active');
     clock.advanceMinutes(minutes);
+    // Keep the caller signed in across the jump, as advance-month does.
+    const token = req.cookies[cookieName(app.deps.config.COOKIE_SECURE)];
+    if (token) {
+      const now = clock.now();
+      await db.session.updateMany({
+        where: { tokenHash: sha256(token), revokedAt: null },
+        data: { lastSeenAt: now, expiresAt: new Date(now.getTime() + 12 * 3600_000) },
+      });
+    }
     return { now: clock.now().toISOString() };
   });
 }

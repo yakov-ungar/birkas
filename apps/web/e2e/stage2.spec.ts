@@ -63,7 +63,9 @@ test('stage 2: family payment by card with automatic split, receipt and cancella
   await done.getByRole('button', { name: 'צפייה והדפסה' }).click();
   const receipt = page.getByRole('dialog', { name: /קבלה מס׳ 3001/ });
   await expect(receipt.getByRole('cell', { name: 'יוסף כהן' })).toBeVisible();
-  await expect(receipt.getByRole('cell', { name: '₪9,600' })).toBeVisible();
+  await expect(receipt.getByRole('cell', { name: '₪9,600' }).first()).toBeVisible();
+  // The receipt itemizes what was paid (tuition here).
+  await expect(receipt.getByRole('row', { name: /· שכר לימוד/ }).first()).toBeVisible();
   await expect(receipt).toContainText('כרטיס ****0000');
 
   // The card number never reached the server: not in the database, only a token was saved.

@@ -14,6 +14,7 @@ import { PaymentFlow } from '../payments/PaymentFlow';
 import { ChargeModal, DiscountModal } from '../charges/ChargeModals';
 import { AddCardModal, useCardActions } from '../cards/CardsPage';
 import { NewPlanModal, PlanModal } from '../plans/PlanModals';
+import { StudentTutoring } from '../tutoring/Tutoring';
 
 export function StudentModal({ id }: { id: string }) {
   const { close, open } = useDialogs();
@@ -209,6 +210,7 @@ export function StudentModal({ id }: { id: string }) {
           ) : (
             <div className="mu">אין כרטיסים שמורים</div>
           )}
+          <StudentTutoring studentId={id} back={back} />
           <h4>תוכניות חיוב</h4>
           {c.plans === null ? (
             <div className="mu">אין הרשאה</div>

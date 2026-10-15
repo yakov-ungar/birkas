@@ -14,6 +14,8 @@ import { RtlPdf } from '../../lib/pdf';
 import { notFound } from '../../lib/errors';
 import type { Deps } from '../../deps';
 import { getSettings } from '../settings/service';
+import { EMPTY, loadMoney } from '../finance/money';
+import { paidItems, type PaidItem } from '../../domain/ledger';
 
 /** Takes the next number for a document type inside the caller's transaction (gap-free, never reused). */
 export async function nextNumber(tx: Tx, docType: DocType): Promise<number> {
@@ -37,8 +39,30 @@ export interface IssueInput {
   reason?: string | null;
 }
 
+/** Per student, what this receipt pays (frozen on the document): e.g. tuition, a private lesson. */
+async function itemsFor(tx: Tx, input: IssueInput) {
+  if (input.docType !== 'receipt') return null;
+  const lines = input.lines.filter((l) => l.amountAgorot > 0);
+  const money = await loadMoney(
+    tx,
+    lines.map((l) => l.studentId),
+  );
+  return lines.map((l) => {
+    const m = money.get(l.studentId) ?? EMPTY;
+    return {
+      studentId: l.studentId,
+      items: paidItems(
+        m.charges,
+        m.credits.filter((c) => c.paymentId !== input.paymentId),
+        l.amountAgorot,
+      ),
+    };
+  });
+}
+
 export async function issueDocument(tx: Tx, now: Date, input: IssueInput): Promise<Receipt> {
   const number = await nextNumber(tx, input.docType);
+  const items = await itemsFor(tx, input);
   const canonical = JSON.stringify([
     input.docType,
     number,
@@ -49,6 +73,7 @@ export async function issueDocument(tx: Tx, now: Date, input: IssueInput): Promi
     input.reference,
     input.lines.map((l) => [l.studentId, l.amountAgorot]),
     input.creditForReceiptId ?? null,
+    ...(items ? [items] : []),
   ]);
   return tx.receipt.create({
     data: {
@@ -64,6 +89,7 @@ export async function issueDocument(tx: Tx, now: Date, input: IssueInput): Promi
       reference: input.reference,
       creditForReceiptId: input.creditForReceiptId ?? null,
       reason: input.reason ?? null,
+      itemsJson: items ? JSON.stringify(items) : null,
       contentSha256: sha256(canonical),
     },
   });
@@ -99,6 +125,12 @@ export async function receiptView(db: Db | Tx, id: string): Promise<ReceiptView>
   });
   if (!r) throw notFound('המסמך לא נמצא');
   const { schoolName } = await getSettings(db);
+  const items = new Map(
+    (r.itemsJson ? (JSON.parse(r.itemsJson) as { studentId: string; items: PaidItem[] }[]) : []).map((x) => [
+      x.studentId,
+      x.items,
+    ]),
+  );
   return {
     ...toRow(r),
     schoolName,
@@ -108,6 +140,7 @@ export async function receiptView(db: Db | Tx, id: string): Promise<ReceiptView>
     lines: r.payment.allocations.map((a) => ({
       studentName: a.student.fullName,
       amountAgorot: Math.abs(a.amountAgorot),
+      items: items.get(a.studentId) ?? [],
     })),
   };
 }
@@ -141,7 +174,11 @@ export async function renderDocumentPdf(v: ReceiptView, mark: 'מקור' | 'הע
       { header: 'סכום', width: 1.2, align: 'left' },
     ],
     [
-      ...v.lines.map((l) => [l.studentName, formatMoney(l.amountAgorot, { fixed: true })]),
+      ...v.lines.flatMap((l) => [
+        [l.studentName, formatMoney(l.amountAgorot, { fixed: true })],
+        // The items each student's part paid, e.g. "שיעור פרטי: גמרא" (a new item on the receipt).
+        ...l.items.map((i) => [`   · ${i.description}`, formatMoney(i.amountAgorot, { fixed: true })]),
+      ]),
       ['סה״כ', formatMoney(v.amountAgorot, { fixed: true })],
     ],
     { boldLastRow: true },

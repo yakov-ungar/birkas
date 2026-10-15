@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DOC_TYPES, PAYMENT_METHODS, type ReceiptView } from '@tuition/shared';
 import { get, post } from '../../api/client';
@@ -88,12 +88,24 @@ export function ReceiptModal({ id }: { id: string }) {
             </thead>
             <tbody>
               {r.lines.map((l, i) => (
-                <tr key={i}>
-                  <td>{l.studentName}</td>
-                  <td>
-                    <Money a={l.amountAgorot} />
-                  </td>
-                </tr>
+                <Fragment key={i}>
+                  <tr>
+                    <td>
+                      <b>{l.studentName}</b>
+                    </td>
+                    <td>
+                      <Money a={l.amountAgorot} />
+                    </td>
+                  </tr>
+                  {l.items.map((it, j) => (
+                    <tr key={`${i}-${j}`} className="mu">
+                      <td style={{ paddingInlineStart: 24 }}>· {it.description}</td>
+                      <td>
+                        <Money a={it.amountAgorot} />
+                      </td>
+                    </tr>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>

@@ -59,6 +59,8 @@ const MONEY_KEYS = [
   'portal-preview',
   'report',
   'year',
+  'tutoring',
+  'tutors',
 ];
 
 /** After any money change: every list and card may show different balances. */

@@ -19,6 +19,8 @@ export const generalSettingsSchema = z.object({
   grades: z.array(z.string().trim().min(1).max(20)).min(1).max(20),
   /** Stage 9: the school sends email only. SMS and WhatsApp stay available behind this switch. */
   textMessaging: z.boolean(),
+  /** Subjects offered for private lessons with an אברך. */
+  tutorSubjects: z.array(z.string().trim().min(1).max(40)).max(50),
 });
 export type GeneralSettings = z.infer<typeof generalSettingsSchema>;
 
@@ -34,6 +36,7 @@ export const DEFAULT_SETTINGS: AllSettings = {
   backupFrequency: 'daily',
   grades: ["א'", "ב'", "ג'", "ד'", "ה'", "ו'"],
   textMessaging: false,
+  tutorSubjects: ['גמרא', 'משנה', 'חומש', 'קריאה', 'חשבון', 'אנגלית'],
   require2fa: true,
   idleTimeoutMin: 30,
   minPasswordLength: 10,

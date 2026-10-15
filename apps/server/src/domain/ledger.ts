@@ -149,3 +149,45 @@ export function buildLedger(charges: readonly ChargeLite[], credits: readonly Cr
     return { ...r, balanceAgorot: bal };
   });
 }
+
+export interface PaidItem {
+  description: string;
+  amountAgorot: number;
+}
+
+/**
+ * What a payment of `amount` pays for one student, in the same order as debt aging: earlier
+ * credits (other payments and discounts) settle the oldest charges first, this payment covers the
+ * next ones. Anything beyond the open charges is a credit (prepayment).
+ */
+export function paidItems(
+  charges: readonly ChargeLite[],
+  earlierCredits: readonly CreditLite[],
+  amount: number,
+): PaidItem[] {
+  const { reversed, reversals } = reversalSets(charges);
+  const live = charges.filter((c) => !reversed.has(c.id) && !reversals.has(c.id));
+  const debits = live
+    .filter((c) => c.amountAgorot > 0)
+    .sort((a, b) => a.date.localeCompare(b.date) || +a.createdAt - +b.createdAt);
+  let before =
+    sumBy(earlierCredits, (c) => c.amountAgorot) +
+    sumBy(
+      live.filter((c) => c.amountAgorot < 0),
+      (c) => -c.amountAgorot,
+    );
+  let left = amount;
+  const out: PaidItem[] = [];
+  for (const c of debits) {
+    if (left <= 0) break;
+    const settled = Math.min(c.amountAgorot, Math.max(before, 0));
+    before -= settled;
+    const open = c.amountAgorot - settled;
+    if (open <= 0) continue;
+    const pay = Math.min(open, left);
+    out.push({ description: c.description, amountAgorot: pay });
+    left -= pay;
+  }
+  if (left > 0) out.push({ description: 'יתרת זכות (תשלום מראש)', amountAgorot: left });
+  return out;
+}

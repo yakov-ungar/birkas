@@ -30,7 +30,16 @@ describe('Hebrew PDF text', () => {
         issuedAt: new Date().toISOString(),
         printCount: 0,
         cancelledBy: null,
-        lines: [{ studentName: 'יוסף כהן', amountAgorot: 960000 }],
+        lines: [
+          {
+            studentName: 'יוסף כהן',
+            amountAgorot: 960000,
+            items: [
+              { description: 'שכר לימוד תשפ״ז', amountAgorot: 900000 },
+              { description: 'שיעור פרטי: גמרא · הרב לוי · 10/2026', amountAgorot: 60000 },
+            ],
+          },
+        ],
       },
       'מקור',
     );

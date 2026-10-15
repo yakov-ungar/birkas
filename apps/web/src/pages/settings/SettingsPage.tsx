@@ -9,6 +9,7 @@ import { Tabs } from '../../components/Tabs';
 import { useToast } from '../../components/Toast';
 import { fmtDateTime } from '../../components/format';
 import { GeneralModal, Integrations, SchoolYear } from './SettingsTabs';
+import { TutoringSettings } from '../tutoring/Tutoring';
 
 const shekel = (agorot: number) => `₪${(agorot / 100).toLocaleString('he-IL')}`;
 
@@ -31,6 +32,7 @@ export function SettingsPage() {
           { id: 'int', label: 'חיבורים', content: <Integrations /> },
           { id: 'sec', label: 'אבטחה', content: s ? <Security s={s} /> : <p className="mu">טוען...</p> },
           { id: 'yr', label: 'שנת לימודים', content: <SchoolYear /> },
+          { id: 'tut', label: 'שיעורים פרטיים', content: <TutoringSettings /> },
         ]}
       />
     </>

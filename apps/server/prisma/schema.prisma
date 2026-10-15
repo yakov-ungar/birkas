@@ -179,6 +179,7 @@ model Student {
   cards       SavedCard[]
   checks      Check[]
   plans       BillingPlan[]
+  tutoring    TutorAssignment[]
 
   @@index([familyId])
 }
@@ -297,6 +298,8 @@ model Receipt {
   /// For a credit note: the receipt it credits.
   creditForReceiptId String?   @unique
   reason             String?
+  /// What the payment paid, per student (JSON), frozen at issue time: e.g. tuition, a private lesson.
+  itemsJson          String?
   /// SHA-256 of the canonical document content, frozen at issue time (decision A2).
   contentSha256      String
   // Operational fields (may change): print count and delivery.
@@ -699,4 +702,48 @@ model Integration {
   details       String    @default("")
   updatedAt     DateTime?
   updatedByName String?
+}
+
+// ---------- private lessons with אברכים ----------
+
+model Tutor {
+  id          String            @id @default(cuid())
+  name        String
+  phone       String            @default("")
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  assignments TutorAssignment[]
+}
+
+/// A student's private lesson: tutor, subject (from settings) and a monthly price,
+/// charged at the end of every month from startDate until endDate.
+model TutorAssignment {
+  id          String        @id @default(cuid())
+  studentId   String
+  tutorId     String
+  subject     String
+  priceAgorot Int
+  startDate   String
+  endDate     String?
+  note        String        @default("")
+  createdById String?
+  createdAt   DateTime      @default(now())
+  student     Student       @relation(fields: [studentId], references: [id])
+  tutor       Tutor         @relation(fields: [tutorId], references: [id])
+  charges     TutorCharge[]
+
+  @@index([studentId])
+  @@index([tutorId])
+}
+
+/// One charge per assignment per month: the unique pair makes the month-end run idempotent.
+model TutorCharge {
+  id           String          @id @default(cuid())
+  assignmentId String
+  month        String
+  chargeId     String          @unique
+  createdAt    DateTime        @default(now())
+  assignment   TutorAssignment @relation(fields: [assignmentId], references: [id])
+
+  @@unique([assignmentId, month])
 }
